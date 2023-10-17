@@ -1,0 +1,8 @@
+This is a basic text file.
+Let's start a list.
+Colors of the rainbow:
+1. Red
+2. Orange
+3. Yellow
+
+
