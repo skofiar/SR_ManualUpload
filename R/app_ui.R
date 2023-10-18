@@ -57,7 +57,10 @@ app_ui <- function(request) {
                                              uiOutput("MU_sheetname_selectInput")
                                          ),
                                          box(title = "Upload Guideline", solidHeader = TRUE, status = "warning", collapsible = T, width = "100%",
-                                             helpText("TBD!"),
+                                             helpText("Define the minimum data type (Premiums are needed for sure, do we need also Paid and Reported?)"),
+                                             helpText("Massimo mentioned that he had the case once, where he uploaded halfyearly data and then the
+                                                      diagnostics of the the portfolio view was not working (wrong periodicity was used).
+                                                      Make sure that this works also here, otherwise flag it!")
                                          )
                                   ),
                                   column(8,
