@@ -115,8 +115,42 @@ app_server <- function(input, output, session) {
     # Create the
     output$MU_upload_wizard <- renderUI({
       outputlist <- list()
-      outputlist[[1]] <-
-        box(title = "Upload Wizard:", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
+
+      outputlist[[1]] <- box(title = "Upload Wizard - Columnselection:", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
+                             helpText("Please select the the columns to define the following data types:"),
+                             fluidRow(
+                               col_6(
+                                 selectInput(inputId = "MU_wizard_portfolio_name", label = "Portfolio Name:",
+                                             choices = upload_wizard$colnames,
+                                             selected = NULL),
+                                 selectInput(inputId = "MU_wizard_originfrequency", label = "Origin Frequency:",
+                                             choices = upload_wizard$colnames,
+                                             selected = NULL),
+                                 selectInput(inputId = "MU_wizard_originperiod", label = "Origin Period:",
+                                             choices = upload_wizard$colnames,
+                                             selected = NULL),
+                                 selectInput(inputId = "MU_wizard_typeofamount", label = "Type of Amount:",
+                                             choices = upload_wizard$colnames,
+                                             selected = NULL)
+                               ),
+                               col_6(
+                                 selectInput(inputId = "MU_wizard_typeofbusiness", label = "Type of Business:",
+                                             choices = upload_wizard$colnames,
+                                             selected = NULL),
+                                 selectInput(inputId = "MU_wizard_devfrequency", label = "Development Frequency:",
+                                             choices = upload_wizard$colnames,
+                                             selected = NULL),
+                                 selectInput(inputId = "MU_wizard_devperiod", label = "Development Period:",
+                                             choices = upload_wizard$colnames,
+                                             selected = NULL),
+                                 selectInput(inputId = "MU_wizard_amount", label = "Amount:",
+                                             choices = upload_wizard$colnames,
+                                             selected = NULL),
+                               )
+                             )
+      )
+      outputlist[[2]] <-
+        box(title = "Upload Wizard - Selection:", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
               helpText("Please map the columns of the data with the columns of the SPIRE template:"),
               fluidRow(
                 col_4(

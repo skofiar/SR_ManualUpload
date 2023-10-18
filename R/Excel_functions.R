@@ -20,8 +20,7 @@
 #' @importFrom tools file_ext
 #' @importFrom readr read_csv
 #' @importFrom readxl excel_sheets read_xls read_xlsx read_excel
-
-
+#' @export
 fileinp.filereadin <- function(fileinp, shtnms, range.selection, mltple){
   if (is.null(fileinp)) { return() }
 
