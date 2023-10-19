@@ -123,6 +123,7 @@ app_server <- function(input, output, session) {
     output$MU_upload_wizard <- renderUI({
       outputlist <- list()
 
+      # Outputwizard
       outputlist[[1]] <- box(title = "Upload Wizard - Columnselection:", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
                              helpText("Please select the the columns to define the following data types:"),
                              fluidRow(
