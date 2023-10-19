@@ -40,7 +40,7 @@ app_server <- function(input, output, session) {
       outputlist <- list()
 
       # Tab-Selectinput
-      outputlist[[1]] <- selectInput(inputId = "MU_fileupload_sheetnm", label = "In which tab is the data located?",
+      outputlist[[1]] <- shiny::selectInput(inputId = "MU_fileupload_sheetnm", label = "In which tab is the data located?",
                                      choices = upload_wizard$sheetnames, selected = upload_wizard$sheetnames[1], multiple = F)
       # Range selection
       outputlist[[2]] <- fluidRow(
@@ -163,7 +163,9 @@ app_server <- function(input, output, session) {
 
 
   observeEvent(input$MU_update_UpWiz, {
-    print(input$MU_columns_selected)
+    upload_wizard$given_SPIRE_columns <- input$MU_columns_selected
+    upload_wizard$remaining_columns <- upload_wizard$spire_columns[!upload_wizard$spire_columns %in% upload_wizard$given_SPIRE_columns]
+
     #--------------------------------------------------------------------------#
     # UPLOAD WIZARD:
     #--------------------------------------------------------------------------#
@@ -171,71 +173,74 @@ app_server <- function(input, output, session) {
     output$MU_upload_wizard <- renderUI({
       outputlist <- list()
 
-      # Outputwizard
+      # Output-Wizard
       outputlist[[1]] <- box(title = "Upload Wizard - Columnselection:", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
                              helpText("Please select the the columns to define the following data types:"),
-                             fluidRow(
-                               col_6(
-                                 selectInput(inputId = "MU_wizard_portfolio_name", label = "Portfolio Name:",
-                                             choices = upload_wizard$colnames[grepl("port", tolower(upload_wizard$colnames))],
-                                             selected = NULL),
-                                 selectInput(inputId = "MU_wizard_originfrequency", label = "Origin Frequency:",
-                                             choices = upload_wizard$colnames[grepl("ori", tolower(upload_wizard$colnames))],
-                                             selected = NULL),
-                                 selectInput(inputId = "MU_wizard_originperiod", label = "Origin Period:",
-                                             choices = upload_wizard$colnames[grepl("ori", tolower(upload_wizard$colnames))],
-                                             selected = NULL),
-                                 selectInput(inputId = "MU_wizard_typeofamount", label = "Type of Amount:",
-                                             choices = upload_wizard$colnames[grepl("typ", tolower(upload_wizard$colnames))],
-                                             selected = NULL)
-                               ),
-                               col_6(
-                                 selectInput(inputId = "MU_wizard_typeofbusiness", label = "Type of Business:",
-                                             choices = upload_wizard$colnames[grepl("typ", tolower(upload_wizard$colnames))],
-                                             selected = NULL),
-                                 selectInput(inputId = "MU_wizard_devperiod", label = "Development Period:",
-                                             choices = upload_wizard$colnames[grepl("dev", tolower(upload_wizard$colnames))],
-                                             selected = NULL),
-                                 selectInput(inputId = "MU_wizard_amount", label = "Amount:",
-                                             choices = upload_wizard$colnames[grepl("amount", tolower(upload_wizard$colnames))],
-                                             selected = NULL),
-                               )
-                             ),
+                             uiOutput("MU_UpWiz_colsel"),
+                             # fluidRow(
+                             #   col_6(
+                             #     shiny::selectInput(inputId = "MU_wizard_portfolio_name", label = "Portfolio Name:",
+                             #                 choices = upload_wizard$colnames[grepl("port", tolower(upload_wizard$colnames))],
+                             #                 selected = NULL),
+                             #     shiny::selectInput(inputId = "MU_wizard_originfrequency", label = "Origin Frequency:",
+                             #                 choices = upload_wizard$colnames[grepl("ori", tolower(upload_wizard$colnames))],
+                             #                 selected = NULL),
+                             #     shiny::selectInput(inputId = "MU_wizard_originperiod", label = "Origin Period:",
+                             #                 choices = upload_wizard$colnames[grepl("ori", tolower(upload_wizard$colnames))],
+                             #                 selected = NULL),
+                             #     shiny::selectInput(inputId = "MU_wizard_typeofamount", label = "Type of Amount:",
+                             #                 choices = upload_wizard$colnames[grepl("typ", tolower(upload_wizard$colnames))],
+                             #                 selected = NULL)
+                             #   ),
+                             #   col_6(
+                             #     shiny::selectInput(inputId = "MU_wizard_typeofbusiness", label = "Type of Business:",
+                             #                 choices = upload_wizard$colnames[grepl("typ", tolower(upload_wizard$colnames))],
+                             #                 selected = NULL),
+                             #     shiny::selectInput(inputId = "MU_wizard_devperiod", label = "Development Period:",
+                             #                 choices = upload_wizard$colnames[grepl("dev", tolower(upload_wizard$colnames))],
+                             #                 selected = NULL),
+                             #     shiny::selectInput(inputId = "MU_wizard_amount", label = "Amount:",
+                             #                 choices = upload_wizard$colnames[grepl("amount", tolower(upload_wizard$colnames))],
+                             #                 selected = NULL),
+                             #   )
+                             # ),
                              hr(),
                              helpText("Please select for the following "),
+                             uiOutput("MU_UpWiz_allocatedmissingval"),
                              fluidRow(
                                col_4(
-                                 selectInput(inputId = "MU_wizard_process_period", label = "Process Period:",
-                                             choices = c("P03 2022", "P06 2022", "P09 2022", "P12 2022",
-                                                         "P03 2023", "P06 2023", "P09 2023", "P12 2023",
-                                                         "P03 2024", "P06 2024", "P09 2024", "P12 2024",
-                                                         "P03 2025", "P06 2025", "P09 2025", "P12 2025"),
-                                             selected = "P03 2022"),
-                                 textInput(inputId = "MU_wizard_tob", label = "Type of Business:", value = "All types"),
-                                 selectInput(inputId = "MU_wizard_period_type", label = "Process Type:",
-                                             choices = c("Underwriting"),
-                                             selected = "Underwriting"),
+                                 # shiny::selectInput(inputId = "MU_wizard_process_period", label = "Process Period:",
+                                 #             choices = c("P03 2022", "P06 2022", "P09 2022", "P12 2022",
+                                 #                         "P03 2023", "P06 2023", "P09 2023", "P12 2023",
+                                 #                         "P03 2024", "P06 2024", "P09 2024", "P12 2024",
+                                 #                         "P03 2025", "P06 2025", "P09 2025", "P12 2025"),
+                                 #             selected = "P03 2022"),
+                                 # test,
+                                 # textInput(inputId = "MU_wizard_tob", label = "Type of Business:", value = "All types"),
+                                 # shiny::selectInput(inputId = "MU_wizard_period_type", label = "Process Type:",
+                                 #             choices = c("Underwriting"),
+                                 #             selected = "Underwriting"),
                                ),
                                col_4(
-                                 selectInput(inputId = "MU_wizard_process_type", label = "Process Type:",
-                                             choices = c("Group Reserving L&H", "Local Stat", "Local Reserving",
-                                                         "Group Reserving P&C", "Local Reserving P&C"),
-                                             selected = "Local Reserving P&C"),
-                                 textInput(inputId = "MU_wizard_description", label = "Descriptions:", value = "Anything"),
-                                 selectInput(inputId = "MU_wizard_origin_frequency", label = "Origin Frequency:",
-                                             choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
-                                             selected = "Annual"),
+                                 # shiny::selectInput(inputId = "MU_wizard_process_type", label = "Process Type:",
+                                 #             choices = c("Group Reserving L&H", "Local Stat", "Local Reserving",
+                                 #                         "Group Reserving P&C", "Local Reserving P&C"),
+                                 #             selected = "Local Reserving P&C"),
+                                 # textInput(inputId = "MU_wizard_description", label = "Descriptions:", value = "Anything"),
+                                 # shiny::selectInput(inputId = "MU_wizard_origin_frequency", label = "Origin Frequency:",
+                                 #             choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
+                                 #             selected = "Annual"),
                                ),
                                col_4(
-                                 selectInput(inputId = "MU_wizard_legal_entity", label = "Legal Entity:",
-                                             choices = c("Swiss Re Zurich", "Swiss Re Institute"),
-                                             selected = "Swiss Re Zurich"),
-                                 selectInput(inputId = "MU_wizard_currency", label = "Currency:",
-                                             choices = c("CHF", "EUR", "USD", "JPY"),
-                                             selected = "USD"),
-                                 selectInput(inputId = "MU_wizard_devper_frequency", label = "Dev. Period Frequency:",
-                                             choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
-                                             selected = "Annual")
+                                 # shiny::selectInput(inputId = "MU_wizard_legal_entity", label = "Legal Entity:",
+                                 #             choices = c("Swiss Re Zurich", "Swiss Re Institute"),
+                                 #             selected = "Swiss Re Zurich"),
+                                 # shiny::selectInput(inputId = "MU_wizard_currency", label = "Currency:",
+                                 #             choices = c("CHF", "EUR", "USD", "JPY"),
+                                 #             selected = "USD"),
+                                 # shiny::selectInput(inputId = "MU_wizard_devper_frequency", label = "Dev. Period Frequency:",
+                                 #             choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
+                                 #             selected = "Annual")
                                )
                              ),
                              hr(),
@@ -249,10 +254,139 @@ app_server <- function(input, output, session) {
       return(outputlist)
     })
 
+
+    # Generate the selectInputs for the part of the Upload Wizard that should have a column selection:
+    output$MU_UpWiz_colsel <- renderUI({
+      outputlist <- list()
+      # If we have a even number of elements to show then we do the following:
+      if (length(upload_wizard$given_SPIRE_columns)%%2 == 0) {
+        # For each element that was selected in the SPIRE column names we generate an selectInput
+        for (i in 1:(length(upload_wizard$given_SPIRE_columns)/2)) {
+          outputlist[[i]] <- fluidRow(
+            col_6(shiny::selectInput(inputId = paste0("MU_wizard_",gsub(" ", "_", tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 1]))),
+                              label = upload_wizard$given_SPIRE_columns[2*(i - 1) + 1],
+                              choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 1]), 1,3),
+                                                                     tolower(upload_wizard$colnames))])
+            ),
+            col_6(shiny::selectInput(inputId = paste0("MU_wizard_",gsub(" ", "_", tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 2]))),
+                              label = upload_wizard$given_SPIRE_columns[2*(i - 1) + 2],
+                              choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 2]), 1,3),
+                                                                     tolower(upload_wizard$colnames))])
+            )
+          )
+        }
+      }else{
+        # Otherwise we do the the same calculation for all the elements except of the last one and add the last one:
+        for (i in 1:floor(length(upload_wizard$given_SPIRE_columns)/2)) {
+          outputlist[[i]] <- fluidRow(
+            col_6(shiny::selectInput(inputId = paste0("MU_wizard_",gsub(" ", "_", tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 1]))),
+                              label = upload_wizard$given_SPIRE_columns[2*(i - 1) + 1],
+                              choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 1]), 1,3),
+                                                                     tolower(upload_wizard$colnames))])
+            ),
+            col_6(shiny::selectInput(inputId = paste0("MU_wizard_",gsub(" ", "_", tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 2]))),
+                              label = upload_wizard$given_SPIRE_columns[2*(i - 1) + 2],
+                              choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 2]), 1,3),
+                                                                     tolower(upload_wizard$colnames))])
+            )
+          )
+        }
+        outputlist[[length(upload_wizard$given_SPIRE_columns)]] <-
+          fluidRow(
+            col_6(shiny::selectInput(inputId = paste0("MU_wizard_",gsub(" ", "_", tolower(upload_wizard$given_SPIRE_columns[length(upload_wizard$given_SPIRE_columns)]))),
+                              label = upload_wizard$given_SPIRE_columns[length(upload_wizard$given_SPIRE_columns)],
+                              choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[length(upload_wizard$given_SPIRE_columns)]), 1,3),
+                                                                     tolower(upload_wizard$colnames))])
+            ),
+            col_6()
+          )
+
+      }
+
+
+      return(outputlist)
+    })
+
+    # Display the remaing places
+    output$MU_UpWiz_allocatedmissingval <- renderUI({
+      # Defining the components that can be added here:
+      process_period <- shiny::selectInput(inputId = "MU_wizard_process_period", label = "Process Period:",
+                                    choices = c("P03 2022", "P06 2022", "P09 2022", "P12 2022",
+                                                "P03 2023", "P06 2023", "P09 2023", "P12 2023",
+                                                "P03 2024", "P06 2024", "P09 2024", "P12 2024",
+                                                "P03 2025", "P06 2025", "P09 2025", "P12 2025"),
+                                    selected = "P03 2022")
+      type_of_business <- shiny::textInput(inputId = "MU_wizard_type_of_business", label = "Type of Business:", value = "All types")
+      period_type <- shiny::selectInput(inputId = "MU_wizard_period_type", label = "Period Type:",
+                  choices = c("Underwriting"), selected = "Underwriting")
+      process_type <- shiny::selectInput(inputId = "MU_wizard_process_type", label = "Process Type:",
+                  choices = c("Group Reserving L&H", "Local Stat", "Local Reserving",
+                              "Group Reserving P&C", "Local Reserving P&C"), selected = "Local Reserving P&C")
+      description <- shiny::textInput(inputId = "MU_wizard_description", label = "Descriptions:", value = "Anything")
+      origin_frquency <- shiny::selectInput(inputId = "MU_wizard_origin_frquency", label = "Origin Frequency:",
+                  choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
+                  selected = "Annual")
+      legal_entity <- shiny::selectInput(inputId = "MU_wizard_legal_entity", label = "Legal Entity:",
+                  choices = c("Swiss Re Zurich", "Swiss Re Institute"),
+                  selected = "Swiss Re Zurich")
+      currency <- shiny::selectInput(inputId = "MU_wizard_currency", label = "Currency:",
+                  choices = c("CHF", "EUR", "USD", "JPY"),
+                  selected = "USD")
+      development_period_frequency <- shiny::selectInput(inputId = "MU_wizard_development_period_frequency", label = "Dev. Period Frequency:",
+                  choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
+                  selected = "Annual")
+      portfolio_name <- shiny::textInput(inputId = "MU_wizard_portfolio_name", label = "Portfolio Name:",
+                                         placeholder = "Please provide the portfolioname")
+
+
+
+      # Starting to create the output:
+      outputlist <- list()
+      if (any(c("Amount", "Development Period", "Origin Period", "Type of Amount") %in% upload_wizard$remaining_columns)) {
+        outputlist[[1]] <- shiny::helpText('Please make sure that the following column types provided in your data table:',
+                                    "\n", "- Amount", "\n", "- Development Period",
+                                    "\n", "- Origin Period", "\n", "- Type of Amount")
+      }
+
+      test <<- length(upload_wizard$remaining_columns)
+      test_1 <<- upload_wizard$remaining_columns
+      test_2 <<- cat(gsub(" ", "_", tolower(upload_wizard$remaining_columns[1])))
+      test_3 <<- cat(gsub(" ", "_", tolower(upload_wizard$remaining_columns[2])))
+
+      if (length(upload_wizard$remaining_columns) %% 2 == 0) {
+        for (i in 1:(length(upload_wizard$remaining_columns)/2)) {
+          # print(gsub(" ", "_", tolower(upload_wizard$remaining_columns[2*(i - 1) + 1])))
+          # print(gsub(" ", "_", tolower(upload_wizard$remaining_columns[2*(i - 1) + 2])))
+          outputlist[[i + 1]] <- fluidRow(
+            col_6(eval(cat(gsub(" ", "_", tolower(upload_wizard$remaining_columns[2*(i - 1) + 1]))))),
+            col_6(eval(cat(gsub(" ", "_", tolower(upload_wizard$remaining_columns[2*(i - 1) + 2]))))),
+          )
+        }
+      }else{
+        for (i in 1:floor(length(upload_wizard$remaining_columns)/2)) {
+          outputlist[[i + 1]] <- fluidRow(
+            col_6(eval(cat(gsub(" ", "_", tolower(upload_wizard$remaining_columns[2*(i - 1) + 1]))))),
+            col_6(eval(cat(gsub(" ", "_", tolower(upload_wizard$remaining_columns[2*(i - 1) + 2]))))),
+          )
+        }
+
+        outputlist[[length(upload_wizard$remaining_columns)+1]] <-
+          fluidRow(
+            col_6(eval(cat(gsub(" ", "_", tolower(upload_wizard$remaining_columns[length(upload_wizard$remaining_columns)]))))),
+            col_6()
+          )
+      }
+
+      return(outputlist)
+
+    })
+
   })
 
 
-
+  # shiny::selectInput(inputId = "MU_wizard_portfolio_name", label = "Portfolio Name:",
+              #                 choices = upload_wizard$colnames[grepl("port", tolower(upload_wizard$colnames))],
+              #                 selected = NULL),
 
 
 
@@ -304,7 +438,7 @@ app_server <- function(input, output, session) {
                                 uiOutput("SP_data_upload_reported_tab_ui")
                               ),
                               col_6(
-                                selectInput(inputId = "SP_dataupload_reported_numboftri", label = "How many LoBs do you want to consider?",
+                                shiny::selectInput(inputId = "SP_dataupload_reported_numboftri", label = "How many LoBs do you want to consider?",
                                             choices = c("All", 1:20), selected = numberofLoBs()),
                               )
                             ),
@@ -341,7 +475,7 @@ app_server <- function(input, output, session) {
                                 uiOutput("SP_data_upload_paid_tab_ui")
                               ),
                               col_6(
-                                selectInput(inputId = "SP_dataupload_paid_numboftri", label = "How many LoBs do you want to consider?",
+                                shiny::selectInput(inputId = "SP_dataupload_paid_numboftri", label = "How many LoBs do you want to consider?",
                                             choices = c("All", 1:20),
                                             selected = numberofLoBs()),
                               )
@@ -378,7 +512,7 @@ app_server <- function(input, output, session) {
                                 uiOutput("SP_data_upload_IBNR_tab_ui")
                               ),
                               col_6(
-                                selectInput(inputId = "SP_dataupload_IBNR_numboftri", label = "How many LoBs do you want to consider?",
+                                shiny::selectInput(inputId = "SP_dataupload_IBNR_numboftri", label = "How many LoBs do you want to consider?",
                                             choices = c("All", 1:20),
                                             selected = numberofLoBs()),
                               )
@@ -413,7 +547,7 @@ app_server <- function(input, output, session) {
                                 uiOutput("SP_data_upload_prem_tab_ui")
                               ),
                               col_6(
-                                selectInput(inputId = "SP_dataupload_prem_numboftri", label = "How many LoBs do you want to consider?",
+                                shiny::selectInput(inputId = "SP_dataupload_prem_numboftri", label = "How many LoBs do you want to consider?",
                                             choices = c("All", 1:20),
                                             selected = numberofLoBs()),
                               )
@@ -447,7 +581,7 @@ app_server <- function(input, output, session) {
             helpText("Please click on 'Load data'", strong(" only after "), "filling out all the information above!"),
             fluidRow(
               col_6(
-                selectInput(inputId = "SP_dataupload_processpreiod", label = "Please provide the process period:",
+                shiny::selectInput(inputId = "SP_dataupload_processpreiod", label = "Please provide the process period:",
                             choices = c("P03 2022", "P06 2022", "P09 2022", "P12 2022", "P03 2023", "P06 2023", "P09 2023", "P12 2023",
                                         "P03 2024", "P06 2024", "P09 2024", "P12 2024"), selected = "P03 2022")
               ),
@@ -614,7 +748,7 @@ app_server <- function(input, output, session) {
 
     # Generate the selectionInput for the tabs
     outputlist <- list()
-    outputlist[[1]] <- selectInput(inputId = "SP_dataupload_tab_ibnr", label = "Please select the tab that contains the data:",
+    outputlist[[1]] <- shiny::selectInput(inputId = "SP_dataupload_tab_ibnr", label = "Please select the tab that contains the data:",
                                    choices = data[[1]][[5]], selected = data[[1]][[5]][1])
     return(outputlist)
   })
@@ -626,7 +760,7 @@ app_server <- function(input, output, session) {
 
     # Generate the selectionInput for the tabs
     outputlist <- list()
-    outputlist[[1]] <- selectInput(inputId = "SP_dataupload_tab_reported", label = "Please select the tab that contains the data:",
+    outputlist[[1]] <- shiny::selectInput(inputId = "SP_dataupload_tab_reported", label = "Please select the tab that contains the data:",
                                    choices = data[[1]][[5]], selected = data[[1]][[5]][1])
     return(outputlist)
   })
@@ -638,7 +772,7 @@ app_server <- function(input, output, session) {
 
     # Generate the selectionInput for the tabs
     outputlist <- list()
-    outputlist[[1]] <- selectInput(inputId = "SP_dataupload_tab_paid", label = "Please select the tab that contains the data:",
+    outputlist[[1]] <- shiny::selectInput(inputId = "SP_dataupload_tab_paid", label = "Please select the tab that contains the data:",
                                    choices = data[[1]][[5]], selected = data[[1]][[5]][1])
     return(outputlist)
   })
@@ -650,7 +784,7 @@ app_server <- function(input, output, session) {
 
     # Generate the selectionInput for the tabs
     outputlist <- list()
-    outputlist[[1]] <- selectInput(inputId = "SP_dataupload_tab_prem", label = "Please select the tab that contains the data:",
+    outputlist[[1]] <- shiny::selectInput(inputId = "SP_dataupload_tab_prem", label = "Please select the tab that contains the data:",
                                    choices = data[[1]][[5]], selected = data[[1]][[5]][1])
     return(outputlist)
   })
