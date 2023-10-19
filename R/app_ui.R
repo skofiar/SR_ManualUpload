@@ -65,9 +65,10 @@ app_ui <- function(request) {
                                   ),
                                   column(8,
                                          uiOutput("MU_upload_wizard"),
-                                         uiOutput("MU_upload_rawtable_view")
+
                                   )
-                                )
+                                ),
+                                uiOutput("MU_upload_rawtable_view")
                         ),
 
                         #################################
