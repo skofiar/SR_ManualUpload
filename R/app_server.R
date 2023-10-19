@@ -107,7 +107,14 @@ app_server <- function(input, output, session) {
     }
     # Read out the data frame:
     upload_wizard$data <- as.data.frame(upload_wizard$raw_data[[1]])
-    upload_wizard$colnames <- colnames(upload_wizard$data)
+    # upload_wizard$colnames <- colnames(upload_wizard$data)
+
+    # print(upload_wizard$data)
+    print(c(upload_wizard$data[1,]))
+
+    #Generate the column names:
+    upload_wizard$colnames <- as.character(upload_wizard$data[1,])
+    test_row <<- as.character(upload_wizard$data[1,])
 
     #--------------------------------------------------------------------------#
     # UPLOAD WIZARD:
@@ -121,75 +128,74 @@ app_server <- function(input, output, session) {
                              fluidRow(
                                col_6(
                                  selectInput(inputId = "MU_wizard_portfolio_name", label = "Portfolio Name:",
-                                             choices = upload_wizard$colnames,
+                                             choices = upload_wizard$colnames[grepl("port", tolower(upload_wizard$colnames))],
                                              selected = NULL),
                                  selectInput(inputId = "MU_wizard_originfrequency", label = "Origin Frequency:",
-                                             choices = upload_wizard$colnames,
+                                             choices = upload_wizard$colnames[grepl("ori", tolower(upload_wizard$colnames))],
                                              selected = NULL),
                                  selectInput(inputId = "MU_wizard_originperiod", label = "Origin Period:",
-                                             choices = upload_wizard$colnames,
+                                             choices = upload_wizard$colnames[grepl("ori", tolower(upload_wizard$colnames))],
                                              selected = NULL),
                                  selectInput(inputId = "MU_wizard_typeofamount", label = "Type of Amount:",
-                                             choices = upload_wizard$colnames,
+                                             choices = upload_wizard$colnames[grepl("typ", tolower(upload_wizard$colnames))],
                                              selected = NULL)
                                ),
                                col_6(
                                  selectInput(inputId = "MU_wizard_typeofbusiness", label = "Type of Business:",
-                                             choices = upload_wizard$colnames,
-                                             selected = NULL),
-                                 selectInput(inputId = "MU_wizard_devfrequency", label = "Development Frequency:",
-                                             choices = upload_wizard$colnames,
+                                             choices = upload_wizard$colnames[grepl("typ", tolower(upload_wizard$colnames))],
                                              selected = NULL),
                                  selectInput(inputId = "MU_wizard_devperiod", label = "Development Period:",
-                                             choices = upload_wizard$colnames,
+                                             choices = upload_wizard$colnames[grepl("dev", tolower(upload_wizard$colnames))],
                                              selected = NULL),
                                  selectInput(inputId = "MU_wizard_amount", label = "Amount:",
-                                             choices = upload_wizard$colnames,
+                                             choices = upload_wizard$colnames[grepl("amount", tolower(upload_wizard$colnames))],
                                              selected = NULL),
                                )
-                             )
+                             ),
+                             hr(),
+                             helpText("Please select for the following "),
+                             fluidRow(
+                               col_4(
+                                 selectInput(inputId = "MU_wizard_process_period", label = "Process Period:",
+                                             choices = c("P03 2022", "P06 2022", "P09 2022", "P12 2022",
+                                                         "P03 2023", "P06 2023", "P09 2023", "P12 2023",
+                                                         "P03 2024", "P06 2024", "P09 2024", "P12 2024",
+                                                         "P03 2025", "P06 2025", "P09 2025", "P12 2025"),
+                                             selected = "P03 2022"),
+                                 textInput(inputId = "MU_wizard_tob", label = "Type of Business:", value = "All types"),
+                                 selectInput(inputId = "MU_wizard_period_type", label = "Process Type:",
+                                             choices = c("Underwriting"),
+                                             selected = "Underwriting"),
+                               ),
+                               col_4(
+                                 selectInput(inputId = "MU_wizard_process_type", label = "Process Type:",
+                                             choices = c("Group Reserving L&H", "Local Stat", "Local Reserving",
+                                                         "Group Reserving P&C", "Local Reserving P&C"),
+                                             selected = "Local Reserving P&C"),
+                                 textInput(inputId = "MU_wizard_description", label = "Descriptions:", value = "Anything"),
+                                 selectInput(inputId = "MU_wizard_origin_frequency", label = "Origin Frequency:",
+                                             choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
+                                             selected = "Annual"),
+                               ),
+                               col_4(
+                                 selectInput(inputId = "MU_wizard_legal_entity", label = "Legal Entity:",
+                                             choices = c("Swiss Re Zurich", "Swiss Re Institute"),
+                                             selected = "Swiss Re Zurich"),
+                                 selectInput(inputId = "MU_wizard_currency", label = "Currency:",
+                                             choices = c("CHF", "EUR", "USD", "JPY"),
+                                             selected = "USD"),
+                                 selectInput(inputId = "MU_wizard_devper_frequency", label = "Dev. Period Frequency:",
+                                             choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
+                                             selected = "Annual")
+                               )
+                             ),
+                             hr(),
+                             helpText('As soon as you are sure with the selection above, you can press
+                                      the "Generate SPIRE template"-Button to generate the template.'),
+                             actionButton(inputId = "MU_wizard_generate_template",
+                                          label = "Generate SPIRE template", width = "100%",
+                                          style = "color: #FFFFFF; background-color:  #24a0ed; border-color:  #24a0ed")
       )
-      outputlist[[2]] <-
-        box(title = "Upload Wizard - Selection:", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
-              helpText("Please map the columns of the data with the columns of the SPIRE template:"),
-              fluidRow(
-                col_4(
-                  selectInput(inputId = "MU_wizard_process_period", label = "Process Period:",
-                              choices = c("P03 2022", "P06 2022", "P09 2022", "P12 2022",
-                                          "P03 2023", "P06 2023", "P09 2023", "P12 2023",
-                                          "P03 2024", "P06 2024", "P09 2024", "P12 2024",
-                                          "P03 2025", "P06 2025", "P09 2025", "P12 2025"),
-                              selected = "P03 2022"),
-                  textInput(inputId = "MU_wizard_tob", label = "Type of Business:", value = "All types"),
-                  selectInput(inputId = "MU_wizard_period_type", label = "Process Type:",
-                              choices = c("Underwriting"),
-                              selected = "Underwriting"),
-                ),
-                col_4(
-                  selectInput(inputId = "MU_wizard_process_type", label = "Process Type:",
-                              choices = c("Group Reserving L&H", "Local Stat", "Local Reserving",
-                                          "Group Reserving P&C", "Local Reserving P&C"),
-                              selected = "Local Reserving P&C"),
-                  textInput(inputId = "MU_wizard_description", label = "Descriptions:", value = "Anything"),
-                  selectInput(inputId = "MU_wizard_origin_frequency", label = "Origin frequency:",
-                              choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
-                              selected = "Annual"),
-                ),
-                col_4(
-                  selectInput(inputId = "MU_wizard_legal_entity", label = "Legal Entity:",
-                              choices = c("Swiss Re Zurich", "Swiss Re Institute"),
-                              selected = "Swiss Re Zurich"),
-                  selectInput(inputId = "MU_wizard_currency", label = "Currency:",
-                              choices = c("CHF", "EUR", "USD", "JPY"),
-                              selected = "USD"),
-                  selectInput(inputId = "MU_wizard_devper_frequency", label = "Dev. Period frequency:",
-                              choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
-                              selected = "Annual")
-                )
-              )
-        )
-
-
 
       return(outputlist)
     })
@@ -210,7 +216,6 @@ app_server <- function(input, output, session) {
 
     # Show / Load the data table:
     output$MU_upload_rawtable <- DT::renderDataTable({
-      print(upload_wizard$data)
       return(datatable(upload_wizard$data, options = DToptions, class = 'cell-border stripe',
                        editable = T, rownames = F, filter = "none"))
     })
