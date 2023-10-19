@@ -9,7 +9,7 @@
 #' @import htmltools
 #' @import ChainLadder
 #' @import DT
-#' @importFrom shinyWidgets switchInput
+#' @importFrom shinyWidgets switchInput pickerInput
 #' @noRd
 app_server <- function(input, output, session) {
   # # Defining the options for the dataTableOutput:
@@ -107,19 +107,67 @@ app_server <- function(input, output, session) {
     }
     # Read out the data frame:
     upload_wizard$data <- as.data.frame(upload_wizard$raw_data[[1]])
-    # upload_wizard$colnames <- colnames(upload_wizard$data)
-
-    # print(upload_wizard$data)
-    print(c(upload_wizard$data[1,]))
 
     #Generate the column names:
     upload_wizard$colnames <- as.character(upload_wizard$data[1,])
-    test_row <<- as.character(upload_wizard$data[1,])
+    upload_wizard$spire_columns <- c("Process Period", "Process Type", "Portfolio Name", "Legal Entity",
+                                     "Line of Business", "Type of Business", "Description", "Currency",
+                                     "Period Type", "Origin frequency", "Development Period frequency",
+                                     "Origin Period", "Development Period", "Type of Amount", "Amount")
 
+    #--------------------------------------------------------------------------#
+    # COLUMN SELECTION:
+    #--------------------------------------------------------------------------#
+
+    output$MU_column_selection <- renderUI({
+      outputlist <- list()
+
+      outputlist[[1]] <- box(title = "Select given data columns:", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
+                             helpText("Please select all SPIRE column-names that are represented in your data table.
+                                  If you see some columns selected, that are not given in your data table
+                                  then you have to deselect them by clicking on them."),
+                             shinyWidgets::pickerInput(
+                              inputId = "MU_columns_selected", label = "Select represented columns:", choices =  upload_wizard$spire_columns,
+                              options = list(`actions-box` = TRUE), multiple = T,
+                              selected = c("Portfolio Name", "Type of Business", "Origin frequency", "Development Period frequency",
+                                           "Origin Period", "Development Period", "Type of Amount", "Amount")
+                             ),
+                             actionButton(inputId = "MU_update_UpWiz",label = "Update Upload Wizard", width = "100%",
+                                  style = "color: #FFFFFF; background-color:  #24a0ed; border-color:  #24a0ed")
+                          )
+
+      return(outputlist)
+    })
+
+
+    #--------------------------------------------------------------------------#
+    # RAW DATA TABLE:
+    #--------------------------------------------------------------------------#
+    # Show the raw uploaded data:
+    output$MU_upload_rawtable_view <- renderUI({
+      outputlist <- list()
+      outputlist[[1]] <- box(title = "Raw - Data table:", solidHeader = TRUE,
+                             status = "info", collapsible = T, width = "100%",
+                             DT::dataTableOutput("MU_upload_rawtable")
+      )
+      return(outputlist)
+    })
+
+    # Show / Load the data table:
+    output$MU_upload_rawtable <- DT::renderDataTable({
+      return(datatable(upload_wizard$data, options = DToptions, class = 'cell-border stripe',
+                       editable = T, rownames = F, filter = "none"))
+    })
+    #--------------------------------------------------------------------------#
+  })
+
+
+  observeEvent(input$MU_update_UpWiz, {
+    print(input$MU_columns_selected)
     #--------------------------------------------------------------------------#
     # UPLOAD WIZARD:
     #--------------------------------------------------------------------------#
-    # Create the
+    # Create the upload wizard depending on the selection of column from above
     output$MU_upload_wizard <- renderUI({
       outputlist <- list()
 
@@ -201,26 +249,6 @@ app_server <- function(input, output, session) {
       return(outputlist)
     })
 
-
-    #--------------------------------------------------------------------------#
-    # RAW DATA TABLE:
-    #--------------------------------------------------------------------------#
-    # Show the raw uploaded data:
-    output$MU_upload_rawtable_view <- renderUI({
-      outputlist <- list()
-      outputlist[[1]] <- box(title = "Raw - Data table:", solidHeader = TRUE,
-                             status = "info", collapsible = T, width = "100%",
-                             DT::dataTableOutput("MU_upload_rawtable")
-      )
-      return(outputlist)
-    })
-
-    # Show / Load the data table:
-    output$MU_upload_rawtable <- DT::renderDataTable({
-      return(datatable(upload_wizard$data, options = DToptions, class = 'cell-border stripe',
-                       editable = T, rownames = F, filter = "none"))
-    })
-    #--------------------------------------------------------------------------#
   })
 
 

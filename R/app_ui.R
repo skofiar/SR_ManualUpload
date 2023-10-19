@@ -46,6 +46,12 @@ app_ui <- function(request) {
                                 h1("Upload Data - Data Table Version:"),
                                 helpText("Please upload data and provide us with the following
                                          information in order to create the needed SPIRE template:"),
+                                box(title = "Upload Guideline", solidHeader = TRUE, status = "warning", collapsible = T, width = "100%",
+                                    helpText("Define the minimum data type (Premiums are needed for sure, do we need also Paid and Reported?)"),
+                                    helpText("Massimo mentioned that he had the case once, where he uploaded halfyearly data and then the
+                                                      diagnostics of the the portfolio view was not working (wrong periodicity was used).
+                                                      Make sure that this works also here, otherwise flag it!")
+                                ),
                                 fluidRow(
                                   column(4,
                                          box(title = "Data Upload", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
@@ -56,12 +62,7 @@ app_ui <- function(request) {
                                              ),
                                              uiOutput("MU_sheetname_selectInput")
                                          ),
-                                         box(title = "Upload Guideline", solidHeader = TRUE, status = "warning", collapsible = T, width = "100%",
-                                             helpText("Define the minimum data type (Premiums are needed for sure, do we need also Paid and Reported?)"),
-                                             helpText("Massimo mentioned that he had the case once, where he uploaded halfyearly data and then the
-                                                      diagnostics of the the portfolio view was not working (wrong periodicity was used).
-                                                      Make sure that this works also here, otherwise flag it!")
-                                         )
+                                         uiOutput("MU_column_selection")
                                   ),
                                   column(8,
                                          uiOutput("MU_upload_wizard"),
