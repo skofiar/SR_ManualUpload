@@ -288,7 +288,7 @@ app_server <- function(input, output, session) {
       }
 
       # The following information need to be part of the given data talbe
-      if (any(c("Portfolio Name", "Line of Business",  "Origin Period", "Development Period",
+      if (any(c("Line of Business",  "Origin Period", "Development Period",
                 "Type of Amount", "Amount") %in% upload_wizard$remaining_columns)) {
         outputlist[[1]] <- shiny::helpText('Please make sure that the following column types provided in your data table:',
                                     "\n", "- Amount", "\n", "- Development Period",
@@ -331,10 +331,7 @@ app_server <- function(input, output, session) {
         eval(parse(text = temp.str))
       }
 
-      return(outputlist$MU_wizard_generate_template, {
-        # Prepare the data table to the desired format:
-
-      })
+      return(outputlist)
 
     })
 
@@ -347,7 +344,33 @@ app_server <- function(input, output, session) {
   #################################
   ### Display Data & Download   ###
   #################################
-  observeEvent(input$)
+  observeEvent(input$MU_wizard_generate_template, {
+    ### Prepare the data table to the desired format:
+    # Dummy result matrix:
+    dummy_res <- as.data.frame(matrix(rep(NA, 15), ncol = 15))
+    colnames(dummy_res) <- c("Process Period", "Process Type", "Portfolio Name", "Legal Entity", "Line of Business",
+                                  "Type of Business", "Description", "Currency", "Period Type",
+                                  "Origin frequency", "Development Period frequency",
+                                  "Origin Period", "Development Period", "Type of Amount", "Amount")
+
+    # Load data table:
+    dattab <- upload_wizard$data
+
+    dattab_todelete <<- dattab
+    list_to_go_through <<- upload_wizard$given_SPIRE_columns
+
+    for (i in upload_wizard$given_SPIRE_columns) {
+      print(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(i)))]])
+      dummy_res[which(colnames(dummy_res) %in% i),] <- dattab[input[[paste0("MU_wizard_",gsub(" ", "_", tolower(i)))]],]
+    }
+
+
+
+    # Prepare template:
+    # dattab_res <- dattab %>%
+
+
+  })
 
   #----------------------------------------------------------------------------#
   #----------------------------------------------------------------------------#

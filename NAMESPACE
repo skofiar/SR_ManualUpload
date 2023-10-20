@@ -3,6 +3,7 @@
 export("%>%")
 export(fileinp.filereadin)
 export(run_app)
+export(transform_to_template)
 import(ChainLadder)
 import(DT)
 import(htmltools)
