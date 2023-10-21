@@ -22,9 +22,13 @@ app_ui <- function(request) {
                     dashboardHeader( title = "Scheduel P - Prep"),
                     dashboardSidebar(
                       sidebarMenu(id = "overall_sidebar_view",
-                                  menuItem("Manual Upload:", tabName = "MU__funcs", startExpanded = T,
+                                  menuItem("Manual Upload Datatable:", tabName = "MU_funcs", startExpanded = T,
                                            menuSubItem("Upload Data", tabName = "MU_data_upload"),
                                            menuSubItem("Data Display", tabName = "MU_data_display")
+                                  ),
+                                  menuItem("Manual Upload Triangle:", tabName = "MU_triangle_funcs", startExpanded = F,
+                                           menuSubItem("Upload Data Triangle", tabName = "MU_data_upload_triangle"),
+                                           menuSubItem("Data Display Triangle", tabName = "MU_data_display_triangle")
                                   ),
                                   menuItem("Schedule Data Prep:", tabName = "upload_funcs", startExpanded = F,
                                            menuSubItem("Upload Schedule Data", tabName = "SP_data_upload"),
@@ -46,7 +50,7 @@ app_ui <- function(request) {
                                 h1("Upload Data - Data Table Version:"),
                                 helpText("Please upload data and provide us with the following
                                          information in order to create the needed SPIRE template:"),
-                                box(title = "Upload Guideline", solidHeader = TRUE, status = "warning", collapsible = T, width = "100%",
+                                box(title = "Upload Guide", solidHeader = TRUE, status = "warning", collapsible = T, width = "100%",
                                     helpText("Define the minimum data type (Premiums are needed for sure, do we need also Paid and Reported?)"),
                                     helpText("Massimo mentioned that he had the case once, where he uploaded halfyearly data and then the
                                                       diagnostics of the the portfolio view was not working (wrong periodicity was used).
@@ -89,6 +93,50 @@ app_ui <- function(request) {
                                   )
                                 )
                         ),
+
+                        #------------------------------------------------------#
+                        #------------------------------------------------------#
+                        #################################
+                        ###   Upload Manual Data      ###
+                        #################################
+                        tabItem(tabName = "MU_data_upload_triangle",
+                                h1("Upload Data - Triangle Data:"),
+                                helpText("Please upload data and provide us with the following
+                                         information in order to create the needed SPIRE template:"),
+                                fluidRow(
+                                  col_4(
+                                    box(title = "Data Upload", solidHeader = TRUE, status = "info",
+                                        collapsible = T, width = "100%",
+                                          helpText("Please upload the file/s which contain the data triangles
+                                                   and should be converted to the SPIRE template:"),
+                                          fileInput(inputId = "MU_triangle_fileupload",
+                                                    label = "Upload data:",
+                                                    multiple = T, accept = c(".csv",'.xlsx', '.xls', '.xlsm')
+                                          ),
+                                          numericInput(inputId = "MU_triangle_numtri", label = "Number of triangles of interest:",
+                                                       value = 3, min = 1, max = 10, step = 1),
+                                          actionButton(inputId = "MU_triangle_load_button",
+                                                       label = "Load Data", width = "100%")
+                                    ),
+                                  ),
+                                  col_8(
+                                    uiOutput("MU_triangle_informationbox"),
+                                    uiOutput("MU_triangle_trianglebox")
+                                  )
+                                )
+                        ),
+
+                        #################################
+                        ###   Manual Data Display     ###
+                        #################################
+                        tabItem(tabName = "MU_data_display_triangle",
+                                h1("Upload Data - Display of uploaded Triangle:"),
+                                helpText("As soon as you have updated the triangle data and given us the
+                                         needed information you'll find the prepared SPIRE template here.
+                                         After checking the table, you can export the template."),
+
+                        ),
+
 
                         #------------------------------------------------------#
                         #################################

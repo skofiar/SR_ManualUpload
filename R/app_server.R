@@ -163,7 +163,7 @@ app_server <- function(input, output, session) {
       return(datatable(upload_wizard$data, options = DToptions, class = 'cell-border stripe',
                        editable = T, rownames = F, filter = "none"))
     })
-    #--------------------------------------------------------------------------#
+
   })
 
 
@@ -455,6 +455,62 @@ app_server <- function(input, output, session) {
       saveWorkbook(wb, file, overwrite = TRUE)
     }
   )
+
+  #----------------------------------------------------------------------------#
+  #----------------------------------------------------------------------------#
+  #################################
+  ###   Upload Manual Data      ###
+  #################################
+  # As soon as the load data button is clicked --> Generate the two boxes:
+  observeEvent(input$MU_triangle_load_button , {
+    # Ask all the input variables here:
+    output$MU_triangle_informationbox <- renderUI({
+      outputlist <- list()
+      outputlist[[1]] <- helpText("This need to be changed!")
+      return(outputlist)
+    })
+
+    # Create the views for the triangles:
+    output$MU_triangle_trianglebox <- renderUI({
+      outputlist <- list()
+      outputlist[[1]] <-
+        box(title = "Triangle Data Information", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
+            uiOutput("MU_triangle_detailbox")
+        )
+      return(outputlist)
+    })
+
+    # Detail information for the triangle box:
+    output$MU_triangle_detailbox <- renderUI({
+      # Define possbile choices:
+      pos_choices <- c("Paid", "Premium", "Reported", "Case Reserves", "Claims")
+      # Generate UI:
+      outputlist <- list()
+      for (i in 1:input$MU_triangle_numtri) {
+        outputlist[[1]] <- fluidRow(
+          col_6(
+            selectInput(inputId = paste0("MU_triangle_selecttritype_", i),
+                        label = paste0("Please select line of business of triangle ", i, ":"),
+                        choices = pos_choices)
+          ),
+          col_6(
+            fluidRow(
+              col_6(
+                textInput(inputId = paste0("MU_triangle_startingcell_",i),
+                          label = paste0("Starting cell of range ", i), placeholder = "E.g. A1")
+              ),
+              col_6(
+                textInput(inputId = paste0("MU_triangle_endingcell_",i),
+                          label = paste0("Ending cell of range ", i), placeholder = "E.g. F10")
+              )
+            )
+          )
+        )
+      }
+      return(outputlist)
+    })
+
+  })
 
 
   #----------------------------------------------------------------------------#
