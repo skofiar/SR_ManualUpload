@@ -9,17 +9,23 @@
 #' @import htmltools
 #' @import ChainLadder
 #' @import DT
-#' @importFrom shinyWidgets switchInput
+#' @importFrom openxlsx createWorkbook addWorksheet writeData saveWorkbook addStyle createStyle
+#' @importFrom shinyWidgets switchInput pickerInput
+#' @importFrom rlang !! sym
 #' @noRd
 app_server <- function(input, output, session) {
   # # Defining the options for the dataTableOutput:
   DToptions <<- list(autoWidth = FALSE, scrollX = TRUE,
                     columnDefs = list(list(width = "125px", targets = "_all")),dom = 'tpB',
                     lengthMenu = list(c(5, 10,-1), c('5', '10', 'All')), pageLength = 15)
+  DToptions_short <<- list(autoWidth = FALSE, scrollX = TRUE,
+                     columnDefs = list(list(width = "125px", targets = "_all")),dom = 'tpB',
+                     lengthMenu = list(c(5, 10,-1), c('5', '10', 'All')), pageLength = 10)
 
   # Reactive value for data wizard:
   upload_wizard <- reactiveValues()
 
+  #----------------------------------------------------------------------------#
   #----------------------------------------------------------------------------#
   #################################
   ###   Upload Manual Data      ###
@@ -40,7 +46,7 @@ app_server <- function(input, output, session) {
       outputlist <- list()
 
       # Tab-Selectinput
-      outputlist[[1]] <- selectInput(inputId = "MU_fileupload_sheetnm", label = "In which tab is the data located?",
+      outputlist[[1]] <- shiny::selectInput(inputId = "MU_fileupload_sheetnm", label = "In which tab is the data located?",
                                      choices = upload_wizard$sheetnames, selected = upload_wizard$sheetnames[1], multiple = F)
       # Range selection
       outputlist[[2]] <- fluidRow(
@@ -107,96 +113,33 @@ app_server <- function(input, output, session) {
     }
     # Read out the data frame:
     upload_wizard$data <- as.data.frame(upload_wizard$raw_data[[1]])
-    # upload_wizard$colnames <- colnames(upload_wizard$data)
-
-    # print(upload_wizard$data)
-    print(c(upload_wizard$data[1,]))
 
     #Generate the column names:
     upload_wizard$colnames <- as.character(upload_wizard$data[1,])
-    test_row <<- as.character(upload_wizard$data[1,])
+    upload_wizard$spire_columns <- c("Process Period", "Process Type", "Portfolio Name", "Legal Entity",
+                                     "Line of Business", "Type of Business", "Description", "Currency",
+                                     "Period Type", "Origin frequency", "Development Period frequency",
+                                     "Origin Period", "Development Period", "Type of Amount", "Amount")
 
     #--------------------------------------------------------------------------#
-    # UPLOAD WIZARD:
+    # COLUMN SELECTION:
     #--------------------------------------------------------------------------#
-    # Create the
-    output$MU_upload_wizard <- renderUI({
+
+    output$MU_column_selection <- renderUI({
       outputlist <- list()
 
-      # Outputwizard
-      outputlist[[1]] <- box(title = "Upload Wizard - Columnselection:", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
-                             helpText("Please select the the columns to define the following data types:"),
-                             fluidRow(
-                               col_6(
-                                 selectInput(inputId = "MU_wizard_portfolio_name", label = "Portfolio Name:",
-                                             choices = upload_wizard$colnames[grepl("port", tolower(upload_wizard$colnames))],
-                                             selected = NULL),
-                                 selectInput(inputId = "MU_wizard_originfrequency", label = "Origin Frequency:",
-                                             choices = upload_wizard$colnames[grepl("ori", tolower(upload_wizard$colnames))],
-                                             selected = NULL),
-                                 selectInput(inputId = "MU_wizard_originperiod", label = "Origin Period:",
-                                             choices = upload_wizard$colnames[grepl("ori", tolower(upload_wizard$colnames))],
-                                             selected = NULL),
-                                 selectInput(inputId = "MU_wizard_typeofamount", label = "Type of Amount:",
-                                             choices = upload_wizard$colnames[grepl("typ", tolower(upload_wizard$colnames))],
-                                             selected = NULL)
-                               ),
-                               col_6(
-                                 selectInput(inputId = "MU_wizard_typeofbusiness", label = "Type of Business:",
-                                             choices = upload_wizard$colnames[grepl("typ", tolower(upload_wizard$colnames))],
-                                             selected = NULL),
-                                 selectInput(inputId = "MU_wizard_devperiod", label = "Development Period:",
-                                             choices = upload_wizard$colnames[grepl("dev", tolower(upload_wizard$colnames))],
-                                             selected = NULL),
-                                 selectInput(inputId = "MU_wizard_amount", label = "Amount:",
-                                             choices = upload_wizard$colnames[grepl("amount", tolower(upload_wizard$colnames))],
-                                             selected = NULL),
-                               )
+      outputlist[[1]] <- box(title = "Select given data columns:", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
+                             helpText("Please select all SPIRE column-names that are represented in your data table.
+                                  If you see some columns selected, that are not given in your data table
+                                  then you have to deselect them by clicking on them."),
+                             shinyWidgets::pickerInput(
+                              inputId = "MU_columns_selected", label = "Select represented columns:", choices =  upload_wizard$spire_columns,
+                              options = list(`actions-box` = TRUE), multiple = T,
+                              selected = c("Line of Business",  "Origin Period", "Development Period", "Type of Amount", "Amount")
                              ),
-                             hr(),
-                             helpText("Please select for the following "),
-                             fluidRow(
-                               col_4(
-                                 selectInput(inputId = "MU_wizard_process_period", label = "Process Period:",
-                                             choices = c("P03 2022", "P06 2022", "P09 2022", "P12 2022",
-                                                         "P03 2023", "P06 2023", "P09 2023", "P12 2023",
-                                                         "P03 2024", "P06 2024", "P09 2024", "P12 2024",
-                                                         "P03 2025", "P06 2025", "P09 2025", "P12 2025"),
-                                             selected = "P03 2022"),
-                                 textInput(inputId = "MU_wizard_tob", label = "Type of Business:", value = "All types"),
-                                 selectInput(inputId = "MU_wizard_period_type", label = "Process Type:",
-                                             choices = c("Underwriting"),
-                                             selected = "Underwriting"),
-                               ),
-                               col_4(
-                                 selectInput(inputId = "MU_wizard_process_type", label = "Process Type:",
-                                             choices = c("Group Reserving L&H", "Local Stat", "Local Reserving",
-                                                         "Group Reserving P&C", "Local Reserving P&C"),
-                                             selected = "Local Reserving P&C"),
-                                 textInput(inputId = "MU_wizard_description", label = "Descriptions:", value = "Anything"),
-                                 selectInput(inputId = "MU_wizard_origin_frequency", label = "Origin Frequency:",
-                                             choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
-                                             selected = "Annual"),
-                               ),
-                               col_4(
-                                 selectInput(inputId = "MU_wizard_legal_entity", label = "Legal Entity:",
-                                             choices = c("Swiss Re Zurich", "Swiss Re Institute"),
-                                             selected = "Swiss Re Zurich"),
-                                 selectInput(inputId = "MU_wizard_currency", label = "Currency:",
-                                             choices = c("CHF", "EUR", "USD", "JPY"),
-                                             selected = "USD"),
-                                 selectInput(inputId = "MU_wizard_devper_frequency", label = "Dev. Period Frequency:",
-                                             choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
-                                             selected = "Annual")
-                               )
-                             ),
-                             hr(),
-                             helpText('As soon as you are sure with the selection above, you can press
-                                      the "Generate SPIRE template"-Button to generate the template.'),
-                             actionButton(inputId = "MU_wizard_generate_template",
-                                          label = "Generate SPIRE template", width = "100%",
-                                          style = "color: #FFFFFF; background-color:  #24a0ed; border-color:  #24a0ed")
-      )
+                             actionButton(inputId = "MU_update_UpWiz",label = "Update Upload Wizard", width = "100%",
+                                  style = "color: #FFFFFF; background-color:  #24a0ed; border-color:  #24a0ed")
+                          )
 
       return(outputlist)
     })
@@ -206,7 +149,7 @@ app_server <- function(input, output, session) {
     # RAW DATA TABLE:
     #--------------------------------------------------------------------------#
     # Show the raw uploaded data:
-    output$MU_upload_rawtable_view <- renderUI({
+    output$MU_upload_rawtable_view <- shiny::renderUI({
       outputlist <- list()
       outputlist[[1]] <- box(title = "Raw - Data table:", solidHeader = TRUE,
                              status = "info", collapsible = T, width = "100%",
@@ -224,6 +167,180 @@ app_server <- function(input, output, session) {
   })
 
 
+  shiny::observeEvent(input$MU_update_UpWiz, {
+    upload_wizard$given_SPIRE_columns <- input$MU_columns_selected
+    upload_wizard$remaining_columns <- upload_wizard$spire_columns[!upload_wizard$spire_columns %in% upload_wizard$given_SPIRE_columns]
+
+    #--------------------------------------------------------------------------#
+    # UPLOAD WIZARD:
+    #--------------------------------------------------------------------------#
+    # Create the upload wizard depending on the selection of column from above
+    output$MU_upload_wizard <- shiny::renderUI({
+      outputlist <- list()
+
+      # Output-Wizard
+      outputlist[[1]] <- box(title = "Upload Wizard - Columnselection:", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
+                             shiny::helpText("Please select the the columns to define the following data types:"),
+                             shiny::uiOutput("MU_UpWiz_colsel"),
+                             htmltools::hr(),
+                             shiny::helpText("Please select for the following "),
+                             shiny::uiOutput("MU_UpWiz_allocatedmissingval"),
+                             htmltools::hr(),
+                             shiny::helpText('As soon as you are sure with the selection above, you can press
+                                      the "Generate SPIRE template"-Button to generate the template.'),
+                             shiny::actionButton(inputId = "MU_wizard_generate_template",
+                                          label = "Generate SPIRE template", width = "100%",
+                                          style = "color: #FFFFFF; background-color:  #24a0ed; border-color:  #24a0ed")
+      )
+
+      return(outputlist)
+    })
+
+
+    # Generate the selectInputs for the part of the Upload Wizard that should have a column selection:
+    output$MU_UpWiz_colsel <- shiny::renderUI({
+      outputlist <- list()
+      # If we have a even number of elements to show then we do the following:
+      if (length(upload_wizard$given_SPIRE_columns) %% 2 == 0) {
+        # For each element that was selected in the SPIRE column names we generate an selectInput
+        for (i in 1:(length(upload_wizard$given_SPIRE_columns)/2)) {
+          outputlist[[i]] <- shiny::fluidRow(
+            col_6(shiny::selectInput(inputId = paste0("MU_wizard_",gsub(" ", "_", tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 1]))),
+                              label = upload_wizard$given_SPIRE_columns[2*(i - 1) + 1],
+                              choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 1]), 1,3),
+                                                                     tolower(upload_wizard$colnames))])
+            ),
+            col_6(shiny::selectInput(inputId = paste0("MU_wizard_",gsub(" ", "_", tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 2]))),
+                              label = upload_wizard$given_SPIRE_columns[2*(i - 1) + 2],
+                              choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 2]), 1,3),
+                                                                     tolower(upload_wizard$colnames))])
+            )
+          )
+        }
+      }else{
+        # Otherwise we do the the same calculation for all the elements except of the last one and add the last one:
+        for (i in 1:floor(length(upload_wizard$given_SPIRE_columns)/2)) {
+          outputlist[[i]] <- shiny::fluidRow(
+            col_6(shiny::selectInput(inputId = paste0("MU_wizard_",gsub(" ", "_", tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 1]))),
+                              label = upload_wizard$given_SPIRE_columns[2*(i - 1) + 1],
+                              choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 1]), 1,3),
+                                                                     tolower(upload_wizard$colnames))])
+            ),
+            col_6(shiny::selectInput(inputId = paste0("MU_wizard_",gsub(" ", "_", tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 2]))),
+                              label = upload_wizard$given_SPIRE_columns[2*(i - 1) + 2],
+                              choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 2]), 1,3),
+                                                                     tolower(upload_wizard$colnames))])
+            )
+          )
+        }
+        outputlist[[length(upload_wizard$given_SPIRE_columns)]] <-
+          shiny::fluidRow(
+            col_6(shiny::selectInput(inputId = paste0("MU_wizard_",gsub(" ", "_", tolower(upload_wizard$given_SPIRE_columns[length(upload_wizard$given_SPIRE_columns)]))),
+                              label = upload_wizard$given_SPIRE_columns[length(upload_wizard$given_SPIRE_columns)],
+                              choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[length(upload_wizard$given_SPIRE_columns)]), 1,3),
+                                                                     tolower(upload_wizard$colnames))])
+            ),
+            col_6()
+          )
+
+      }
+
+
+      return(outputlist)
+    })
+
+    # Display the remaing places
+    output$MU_UpWiz_allocatedmissingval <- shiny::renderUI({
+      # Defining the components that can be added here:
+      ## Reason: Some of them should be textInputs and some have already predefined choices
+      process_period <- shiny::selectInput(inputId = "MU_wizard_process_period", label = "Process Period:",
+                                    choices = c("P03 2022", "P06 2022", "P09 2022", "P12 2022",
+                                                "P03 2023", "P06 2023", "P09 2023", "P12 2023",
+                                                "P03 2024", "P06 2024", "P09 2024", "P12 2024",
+                                                "P03 2025", "P06 2025", "P09 2025", "P12 2025"),
+                                    selected = "P03 2022")
+      type_of_business <- shiny::textInput(inputId = "MU_wizard_type_of_business",
+                                           label = "Type of Business:", value = "All types")
+      line_of_business <- shiny::textInput(inputId = "MU_wizard_line_of_business",
+                                           label = "Line of Business:", value = "All types")
+      period_type <- shiny::selectInput(inputId = "MU_wizard_period_type", label = "Period Type:",
+                  choices = c("Underwriting"), selected = "Underwriting")
+      process_type <- shiny::selectInput(inputId = "MU_wizard_process_type", label = "Process Type:",
+                  choices = c("Group Reserving L&H", "Local Stat", "Local Reserving",
+                              "Group Reserving P&C", "Local Reserving P&C"), selected = "Local Reserving P&C")
+      description <- shiny::textInput(inputId = "MU_wizard_description", label = "Descriptions:", value = "Anything")
+      origin_frequency <- shiny::selectInput(inputId = "MU_wizard_origin_frquency", label = "Origin Frequency:",
+                  choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
+                  selected = "Annual")
+      legal_entity <- shiny::selectInput(inputId = "MU_wizard_legal_entity", label = "Legal Entity:",
+                  choices = c("Swiss Re Zurich", "Swiss Re Institute"),
+                  selected = "Swiss Re Zurich")
+      currency <- shiny::selectInput(inputId = "MU_wizard_currency", label = "Currency:",
+                  choices = c("CHF", "EUR", "USD", "JPY"),
+                  selected = "USD")
+      development_period_frequency <- shiny::selectInput(inputId = "MU_wizard_development_period_frequency", label = "Development Period Frequency:",
+                  choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
+                  selected = "Annual")
+      portfolio_name <- shiny::textInput(inputId = "MU_wizard_portfolio_name", label = "Portfolio Name:",
+                                         placeholder = "Please provide portfolio name")
+
+      # Creating the output variable:
+      outputlist <- list()
+
+      # Take the case into account, that everything is given in the given case:
+      if (length(upload_wizard$remaining_columns) == 0) {
+        return(outputlist)
+      }
+
+      # The following information need to be part of the given data talbe
+      if (any(c("Line of Business",  "Origin Period", "Development Period",
+                "Type of Amount", "Amount") %in% upload_wizard$remaining_columns)) {
+        outputlist[[1]] <- shiny::helpText('Please make sure that the following column types provided in your data table:',
+                                    "\n", "- Amount", "\n", "- Development Period",
+                                    "\n", "- Origin Period", "\n", "- Type of Amount",
+                                    "\n", "- Portfolio Name", "\n", "- Line of Business")
+        return(outputlist)
+      }
+
+      # Depending on the given columns in the data table, we need to load the remaining ones:
+      if (length(upload_wizard$remaining_columns) %% 2 == 0) {
+        for (i in 1:(length(upload_wizard$remaining_columns)/2)) {
+
+          temp.str <- paste0(
+            paste0("outputlist[[", i + 1, "]] <- fluidRow(
+              col_6(", gsub(" ", "_", tolower(upload_wizard$remaining_columns[2*(i - 1) + 1])) ,"),
+              col_6(", gsub(" ", "_", tolower(upload_wizard$remaining_columns[2*(i - 1) + 2])) ,"),
+            )")
+          )
+          # Run the prepared string
+          eval(parse(text = temp.str))
+        }
+      }else{
+        for (i in 1:floor(length(upload_wizard$remaining_columns)/2)) {
+          temp.str <- paste0(
+            paste0("outputlist[[", i + 1, "]] <- fluidRow(
+              col_6(", gsub(" ", "_", tolower(upload_wizard$remaining_columns[2*(i - 1) + 1])) ,"),
+              col_6(", gsub(" ", "_", tolower(upload_wizard$remaining_columns[2*(i - 1) + 2])) ,"),
+            )")
+          )
+          # Run the prepared string
+          eval(parse(text = temp.str))
+        }
+
+        temp.str <- paste0(
+          paste0("outputlist[[", length(upload_wizard$remaining_columns) + 1, "]] <- fluidRow(
+              col_6(", gsub(" ", "_", tolower(upload_wizard$remaining_columns[length(upload_wizard$remaining_columns)])) ,"),
+              col_6(),
+            )")
+        )
+        eval(parse(text = temp.str))
+      }
+
+      return(outputlist)
+
+    })
+
+  })
 
 
 
@@ -232,9 +349,115 @@ app_server <- function(input, output, session) {
   #################################
   ### Display Data & Download   ###
   #################################
+  shiny::observeEvent(input$MU_wizard_generate_template, {
+    ### Prepare the data table to the desired format:
+    # Load data table:
+    dattab <- upload_wizard$data
+    colnames(dattab) <- dattab[1,]
+    dattab <- dattab[-1,]
+
+    # Dummy result matrix:
+    dummy_res <- as.data.frame(matrix(rep(NA, 15*nrow(dattab)), ncol = 15, nrow = nrow(dattab)))
+    colnames(dummy_res) <- c("Process Period", "Process Type", "Portfolio Name", "Legal Entity", "Line of Business",
+                                  "Type of Business", "Description", "Currency", "Period Type",
+                                  "Origin frequency", "Development Period frequency",
+                                  "Origin Period", "Development Period", "Type of Amount", "Amount")
+
+    # For each given column name, we change
+    for (i in upload_wizard$given_SPIRE_columns) {
+      dummy_res[,which(colnames(dummy_res) %in% i)] <- dattab[,which(colnames(dattab) %in% input[[paste0("MU_wizard_",gsub(" ", "_", tolower(i)))]])]
+    }
+
+    # Adding to the result dataframe also the not in the data table given columns:
+    for (j in upload_wizard$remaining_columns) {
+      # Only in the case of the Portfolio Name we need to do a concatenation
+      # as there could be multiple LoBs in the datatable and therefore we can't name them
+      # all the same
+      if (j != "Portfolio Name") {
+        dummy_res[, j] <- input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]]
+      }else{
+        if (all(is.na(dummy_res[,"Line of Business"]))) {
+          dummy_res[, j] <- paste0(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]],"_",
+                                   input[[paste0("MU_wizard_",gsub(" ", "_", tolower("Line of Business")))]])
+        }else{
+          dummy_res[, j] <- paste0(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]],"_",dummy_res[,"Line of Business"])
+        }
+
+      }
+
+    }
+
+    # Save the template to the reactive list
+    upload_wizard$final_df <- dummy_res
+
+    #Generate the box element, that allows us to download the data table
+    output$MU_data_display_exportbox <- shiny::renderUI({
+      outputlist <- list()
+      outputlist[[1]] <-
+        box(title = "Export Template", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
+            shiny::helpText("Please check the data table to the right. As soon as you are happy
+                     with the content of the data table, you can export the
+                     table to a Excel-File using the button below.",
+                     "In a next step you can upload the exported template to SPIRE"),
+            shiny::textInput("MU_data_exportname", label = "How should the template be named?",
+                             value = "SPIRE_template"),
+            shiny::downloadButton('MU_data_display_download', 'Create SPIRE Template', width = "100%",
+                           style = "color: #FFFFFF; background-color:  #24a0ed;
+                               border-color:  #24a0ed", icon = shiny::icon("plus"))
+        )
+
+      return(outputlist)
+    })
+
+    # Generate the UI element for the table output:
+    output$MU_data_display_tablecheck <- shiny::renderUI({
+      outputlist <- list()
+      outputlist[[1]] <-
+        box(title = "Prepared Template Table", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
+            DT::dataTableOutput("MU_data_dt_show")
+        )
+
+      return(outputlist)
+    })
+
+    # Forward the user to the next view:
+    updateTabItems(session, "overall_sidebar_view", selected = "MU_data_display")
+
+  })
+
+  output$MU_data_dt_show <- DT::renderDataTable({
+    return(datatable(upload_wizard$final_df, options = DToptions_short, class = 'cell-border stripe',
+                            editable = T, rownames = F, filter = "none"))
+
+  })
+
+  # Download the template:
+  output$MU_data_display_download <- downloadHandler(
+    filename = function(){
+      filename <- input$MU_data_exportname
+      paste(Sys.Date(),"_",filename , ".xlsx", sep = "")
+    },
+    content = function(file){
+      # Create the working directory:
+      wb <- createWorkbook()
+
+      # Create a new Tab in the workbook, with the predefined name:
+      addWorksheet(wb,"data")
+
+      # Reads out the triangle data and saves it in a temp. variabel
+      writeData(wb = wb, sheet = "data", x = upload_wizard$final_df,
+                rowNames = F ,colNames = TRUE)
+
+      # Adding the standard Excel Style to the workbook:
+      addingstyletowb(wb = wb, sheetnm = "data", data = upload_wizard$final_df)
+
+      # Save the file
+      saveWorkbook(wb, file, overwrite = TRUE)
+    }
+  )
 
 
-
+  #----------------------------------------------------------------------------#
   #----------------------------------------------------------------------------#
   # Define reactiveValues for loaded data and manipulated data:
   data_upload <- reactiveValues()
@@ -276,7 +499,7 @@ app_server <- function(input, output, session) {
                                 uiOutput("SP_data_upload_reported_tab_ui")
                               ),
                               col_6(
-                                selectInput(inputId = "SP_dataupload_reported_numboftri", label = "How many LoBs do you want to consider?",
+                                shiny::selectInput(inputId = "SP_dataupload_reported_numboftri", label = "How many LoBs do you want to consider?",
                                             choices = c("All", 1:20), selected = numberofLoBs()),
                               )
                             ),
@@ -313,7 +536,7 @@ app_server <- function(input, output, session) {
                                 uiOutput("SP_data_upload_paid_tab_ui")
                               ),
                               col_6(
-                                selectInput(inputId = "SP_dataupload_paid_numboftri", label = "How many LoBs do you want to consider?",
+                                shiny::selectInput(inputId = "SP_dataupload_paid_numboftri", label = "How many LoBs do you want to consider?",
                                             choices = c("All", 1:20),
                                             selected = numberofLoBs()),
                               )
@@ -350,7 +573,7 @@ app_server <- function(input, output, session) {
                                 uiOutput("SP_data_upload_IBNR_tab_ui")
                               ),
                               col_6(
-                                selectInput(inputId = "SP_dataupload_IBNR_numboftri", label = "How many LoBs do you want to consider?",
+                                shiny::selectInput(inputId = "SP_dataupload_IBNR_numboftri", label = "How many LoBs do you want to consider?",
                                             choices = c("All", 1:20),
                                             selected = numberofLoBs()),
                               )
@@ -385,7 +608,7 @@ app_server <- function(input, output, session) {
                                 uiOutput("SP_data_upload_prem_tab_ui")
                               ),
                               col_6(
-                                selectInput(inputId = "SP_dataupload_prem_numboftri", label = "How many LoBs do you want to consider?",
+                                shiny::selectInput(inputId = "SP_dataupload_prem_numboftri", label = "How many LoBs do you want to consider?",
                                             choices = c("All", 1:20),
                                             selected = numberofLoBs()),
                               )
@@ -419,7 +642,7 @@ app_server <- function(input, output, session) {
             helpText("Please click on 'Load data'", strong(" only after "), "filling out all the information above!"),
             fluidRow(
               col_6(
-                selectInput(inputId = "SP_dataupload_processpreiod", label = "Please provide the process period:",
+                shiny::selectInput(inputId = "SP_dataupload_processpreiod", label = "Please provide the process period:",
                             choices = c("P03 2022", "P06 2022", "P09 2022", "P12 2022", "P03 2023", "P06 2023", "P09 2023", "P12 2023",
                                         "P03 2024", "P06 2024", "P09 2024", "P12 2024"), selected = "P03 2022")
               ),
@@ -586,7 +809,7 @@ app_server <- function(input, output, session) {
 
     # Generate the selectionInput for the tabs
     outputlist <- list()
-    outputlist[[1]] <- selectInput(inputId = "SP_dataupload_tab_ibnr", label = "Please select the tab that contains the data:",
+    outputlist[[1]] <- shiny::selectInput(inputId = "SP_dataupload_tab_ibnr", label = "Please select the tab that contains the data:",
                                    choices = data[[1]][[5]], selected = data[[1]][[5]][1])
     return(outputlist)
   })
@@ -598,7 +821,7 @@ app_server <- function(input, output, session) {
 
     # Generate the selectionInput for the tabs
     outputlist <- list()
-    outputlist[[1]] <- selectInput(inputId = "SP_dataupload_tab_reported", label = "Please select the tab that contains the data:",
+    outputlist[[1]] <- shiny::selectInput(inputId = "SP_dataupload_tab_reported", label = "Please select the tab that contains the data:",
                                    choices = data[[1]][[5]], selected = data[[1]][[5]][1])
     return(outputlist)
   })
@@ -610,7 +833,7 @@ app_server <- function(input, output, session) {
 
     # Generate the selectionInput for the tabs
     outputlist <- list()
-    outputlist[[1]] <- selectInput(inputId = "SP_dataupload_tab_paid", label = "Please select the tab that contains the data:",
+    outputlist[[1]] <- shiny::selectInput(inputId = "SP_dataupload_tab_paid", label = "Please select the tab that contains the data:",
                                    choices = data[[1]][[5]], selected = data[[1]][[5]][1])
     return(outputlist)
   })
@@ -622,7 +845,7 @@ app_server <- function(input, output, session) {
 
     # Generate the selectionInput for the tabs
     outputlist <- list()
-    outputlist[[1]] <- selectInput(inputId = "SP_dataupload_tab_prem", label = "Please select the tab that contains the data:",
+    outputlist[[1]] <- shiny::selectInput(inputId = "SP_dataupload_tab_prem", label = "Please select the tab that contains the data:",
                                    choices = data[[1]][[5]], selected = data[[1]][[5]][1])
     return(outputlist)
   })
