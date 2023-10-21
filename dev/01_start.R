@@ -75,6 +75,10 @@ usethis::use_package("readxl")
 usethis::use_package("readr")
 usethis::use_package("tools")
 usethis::use_package("shinyWidgets")
+usethis::use_package("openxlsx")
+
+# For manipulating DFs:
+usethis::use_package("rlang")
 
 # You're now set! ----
 

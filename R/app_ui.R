@@ -75,6 +75,20 @@ app_ui <- function(request) {
                         #################################
                         ###   Manual Data Display     ###
                         #################################
+                        tabItem(tabName = "MU_data_display",
+                                h1("Upload Data - Display of uploaded Data Table:"),
+                                helpText("As soon as you have updated the data table and given us the
+                                         needed information you'll find the prepared SPIRE template here.
+                                         After checking the table, you can export the template."),
+                                fluidRow(
+                                  col_4(
+                                    uiOutput("MU_data_display_exportbox")
+                                  ),
+                                  col_8(
+                                    uiOutput("MU_data_display_tablecheck")
+                                  )
+                                )
+                        ),
 
                         #------------------------------------------------------#
                         #################################

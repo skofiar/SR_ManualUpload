@@ -9,13 +9,18 @@
 #' @import htmltools
 #' @import ChainLadder
 #' @import DT
+#' @importFrom openxlsx createWorkbook addWorksheet writeData saveWorkbook addStyle createStyle
 #' @importFrom shinyWidgets switchInput pickerInput
+#' @importFrom rlang !! sym
 #' @noRd
 app_server <- function(input, output, session) {
   # # Defining the options for the dataTableOutput:
   DToptions <<- list(autoWidth = FALSE, scrollX = TRUE,
                     columnDefs = list(list(width = "125px", targets = "_all")),dom = 'tpB',
                     lengthMenu = list(c(5, 10,-1), c('5', '10', 'All')), pageLength = 15)
+  DToptions_short <<- list(autoWidth = FALSE, scrollX = TRUE,
+                     columnDefs = list(list(width = "125px", targets = "_all")),dom = 'tpB',
+                     lengthMenu = list(c(5, 10,-1), c('5', '10', 'All')), pageLength = 10)
 
   # Reactive value for data wizard:
   upload_wizard <- reactiveValues()
@@ -255,9 +260,9 @@ app_server <- function(input, output, session) {
                                                 "P03 2025", "P06 2025", "P09 2025", "P12 2025"),
                                     selected = "P03 2022")
       type_of_business <- shiny::textInput(inputId = "MU_wizard_type_of_business",
-                                           label = "Type of Business:", placeholder = "All types")
+                                           label = "Type of Business:", value = "All types")
       line_of_business <- shiny::textInput(inputId = "MU_wizard_line_of_business",
-                                           label = "Line of Business:", placeholder = "All types")
+                                           label = "Line of Business:", value = "All types")
       period_type <- shiny::selectInput(inputId = "MU_wizard_period_type", label = "Period Type:",
                   choices = c("Underwriting"), selected = "Underwriting")
       process_type <- shiny::selectInput(inputId = "MU_wizard_process_type", label = "Process Type:",
@@ -344,33 +349,113 @@ app_server <- function(input, output, session) {
   #################################
   ### Display Data & Download   ###
   #################################
-  observeEvent(input$MU_wizard_generate_template, {
+  shiny::observeEvent(input$MU_wizard_generate_template, {
     ### Prepare the data table to the desired format:
+    # Load data table:
+    dattab <- upload_wizard$data
+    colnames(dattab) <- dattab[1,]
+    dattab <- dattab[-1,]
+
     # Dummy result matrix:
-    dummy_res <- as.data.frame(matrix(rep(NA, 15), ncol = 15))
+    dummy_res <- as.data.frame(matrix(rep(NA, 15*nrow(dattab)), ncol = 15, nrow = nrow(dattab)))
     colnames(dummy_res) <- c("Process Period", "Process Type", "Portfolio Name", "Legal Entity", "Line of Business",
                                   "Type of Business", "Description", "Currency", "Period Type",
                                   "Origin frequency", "Development Period frequency",
                                   "Origin Period", "Development Period", "Type of Amount", "Amount")
 
-    # Load data table:
-    dattab <- upload_wizard$data
-
-    dattab_todelete <<- dattab
-    list_to_go_through <<- upload_wizard$given_SPIRE_columns
-
+    # For each given column name, we change
     for (i in upload_wizard$given_SPIRE_columns) {
-      print(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(i)))]])
-      dummy_res[which(colnames(dummy_res) %in% i),] <- dattab[input[[paste0("MU_wizard_",gsub(" ", "_", tolower(i)))]],]
+      dummy_res[,which(colnames(dummy_res) %in% i)] <- dattab[,which(colnames(dattab) %in% input[[paste0("MU_wizard_",gsub(" ", "_", tolower(i)))]])]
     }
 
+    # Adding to the result dataframe also the not in the data table given columns:
+    for (j in upload_wizard$remaining_columns) {
+      # Only in the case of the Portfolio Name we need to do a concatenation
+      # as there could be multiple LoBs in the datatable and therefore we can't name them
+      # all the same
+      if (j != "Portfolio Name") {
+        dummy_res[, j] <- input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]]
+      }else{
+        if (all(is.na(dummy_res[,"Line of Business"]))) {
+          dummy_res[, j] <- paste0(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]],"_",
+                                   input[[paste0("MU_wizard_",gsub(" ", "_", tolower("Line of Business")))]])
+        }else{
+          dummy_res[, j] <- paste0(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]],"_",dummy_res[,"Line of Business"])
+        }
 
+      }
 
-    # Prepare template:
-    # dattab_res <- dattab %>%
+    }
 
+    # Save the template to the reactive list
+    upload_wizard$final_df <- dummy_res
+
+    #Generate the box element, that allows us to download the data table
+    output$MU_data_display_exportbox <- shiny::renderUI({
+      outputlist <- list()
+      outputlist[[1]] <-
+        box(title = "Export Template", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
+            shiny::helpText("Please check the data table to the right. As soon as you are happy
+                     with the content of the data table, you can export the
+                     table to a Excel-File using the button below.",
+                     "In a next step you can upload the exported template to SPIRE"),
+            shiny::textInput("MU_data_exportname", label = "How should the template be named?",
+                             value = "SPIRE_template"),
+            shiny::downloadButton('MU_data_display_download', 'Create SPIRE Template', width = "100%",
+                           style = "color: #FFFFFF; background-color:  #24a0ed;
+                               border-color:  #24a0ed", icon = shiny::icon("plus"))
+        )
+
+      return(outputlist)
+    })
+
+    # Generate the UI element for the table output:
+    output$MU_data_display_tablecheck <- shiny::renderUI({
+      outputlist <- list()
+      outputlist[[1]] <-
+        box(title = "Prepared Template Table", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
+            DT::dataTableOutput("MU_data_dt_show")
+        )
+
+      return(outputlist)
+    })
+
+    # Forward the user to the next view:
+    updateTabItems(session, "overall_sidebar_view", selected = "MU_data_display")
 
   })
+
+  output$MU_data_dt_show <- DT::renderDataTable({
+    return(datatable(upload_wizard$final_df, options = DToptions_short, class = 'cell-border stripe',
+                            editable = T, rownames = F, filter = "none"))
+
+  })
+
+  # Download the template:
+  output$MU_data_display_download <- downloadHandler(
+    filename = function(){
+      filename <- input$MU_data_exportname
+      paste(Sys.Date(),"_",filename , ".xlsx", sep = "")
+    },
+    content = function(file){
+      # Create the working directory:
+      wb <- createWorkbook()
+
+      # Create a new Tab in the workbook, with the predefined name:
+      addWorksheet(wb,"data")
+
+      # Reads out the triangle data and saves it in a temp. variabel
+      writeData(wb = wb, sheet = "data", x = upload_wizard$final_df,
+                rowNames = F ,colNames = TRUE)
+
+      # Adding the standard Excel Style to the workbook:
+      addingstyletowb(wb = wb, sheetnm = "data", data = upload_wizard$final_df)
+
+      # Save the file
+      saveWorkbook(wb, file, overwrite = TRUE)
+    }
+  )
+
 
   #----------------------------------------------------------------------------#
   #----------------------------------------------------------------------------#
