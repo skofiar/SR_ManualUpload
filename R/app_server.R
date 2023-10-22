@@ -475,6 +475,10 @@ app_server <- function(input, output, session) {
       outputlist <- list()
       outputlist[[1]] <-
         box(title = "Triangle Data Information", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
+            helpText("Below you will find the indicated number of triangles of interest."),
+            helpText("For each selection, please indicate the type of triangle,
+                     in which file and in which tab the triangle is located
+                     and in which range."),
             uiOutput("MU_triangle_detailbox")
         )
       return(outputlist)
@@ -487,13 +491,20 @@ app_server <- function(input, output, session) {
       # Generate UI:
       outputlist <- list()
       for (i in 1:input$MU_triangle_numtri) {
-        outputlist[[1]] <- fluidRow(
+        outputlist[[3*(i-1) + 1]] <- htmltools::h5(paste0(i,". Triangle information"),  style = "text-decoration: underline; font-weight: bold")
+        outputlist[[3*(i-1) + 2]] <- fluidRow(
           col_6(
             selectInput(inputId = paste0("MU_triangle_selecttritype_", i),
                         label = paste0("Please select line of business of triangle ", i, ":"),
-                        choices = pos_choices)
+                        choices = pos_choices),
+            selectInput(inputId = paste0("MU_triangle_uploaded_tab_",i),
+                        label = paste0("Please select the source tab:"),
+                        choices = c("Needs to be", "defined", "still"))
           ),
           col_6(
+            selectInput(inputId = paste0("MU_triangle_uploaded_file_",i),
+                        label = paste0("Please select the source excel file:"),
+                        choices = c("Needs to be", "defined", "still")),
             fluidRow(
               col_6(
                 textInput(inputId = paste0("MU_triangle_startingcell_",i),
@@ -506,7 +517,13 @@ app_server <- function(input, output, session) {
             )
           )
         )
+        outputlist[[3*(i-1) + 3]] <- hr()
       }
+
+      outputlist[[3*input$MU_triangle_numtri]] <-
+        actionButton(inputId = "MU_triangle_loadtri_toshow",
+                     label = "Load Triangles", width = "100%",
+                     style = "color: #FFFFFF; background-color:  #24a0ed; border-color:  #24a0ed")
       return(outputlist)
     })
 
