@@ -116,11 +116,11 @@ app_ui <- function(request) {
                                           numericInput(inputId = "MU_triangle_numtri", label = "Number of triangles of interest:",
                                                        value = 3, min = 1, max = 10, step = 1),
                                           actionButton(inputId = "MU_triangle_load_button",
-                                                       label = "Load Data", width = "100%")
+                                                       label = "Load Data", width = "100%"),
                                     ),
+                                    uiOutput("MU_triangle_informationbox"),
                                   ),
                                   col_8(
-                                    uiOutput("MU_triangle_informationbox"),
                                     uiOutput("MU_triangle_trianglebox")
                                   )
                                 )

@@ -22,8 +22,44 @@ app_server <- function(input, output, session) {
                      columnDefs = list(list(width = "125px", targets = "_all")),dom = 'tpB',
                      lengthMenu = list(c(5, 10,-1), c('5', '10', 'All')), pageLength = 10)
 
+
+  # Defining the components that can be added here:
+  ## Reason: Some of them should be textInputs and some have already predefined choices
+  process_period <<- shiny::selectInput(inputId = "MU_wizard_process_period", label = "Process Period:",
+                                       choices = c("P03 2022", "P06 2022", "P09 2022", "P12 2022",
+                                                   "P03 2023", "P06 2023", "P09 2023", "P12 2023",
+                                                   "P03 2024", "P06 2024", "P09 2024", "P12 2024",
+                                                   "P03 2025", "P06 2025", "P09 2025", "P12 2025"),
+                                       selected = "P03 2022")
+  type_of_business <<- shiny::textInput(inputId = "MU_wizard_type_of_business",
+                                       label = "Type of Business:", value = "All types")
+  line_of_business <<- shiny::textInput(inputId = "MU_wizard_line_of_business",
+                                       label = "Line of Business:", value = "All types")
+  period_type <<- shiny::selectInput(inputId = "MU_wizard_period_type", label = "Period Type:",
+                                    choices = c("Underwriting"), selected = "Underwriting")
+  process_type <<- shiny::selectInput(inputId = "MU_wizard_process_type", label = "Process Type:",
+                                     choices = c("Group Reserving L&H", "Local Stat", "Local Reserving",
+                                                 "Group Reserving P&C", "Local Reserving P&C"), selected = "Local Reserving P&C")
+  description <<- shiny::textInput(inputId = "MU_wizard_description", label = "Descriptions:", value = "Anything")
+  origin_frequency <<- shiny::selectInput(inputId = "MU_wizard_origin_frquency", label = "Origin Frequency:",
+                                         choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
+                                         selected = "Annual")
+  legal_entity <<- shiny::selectInput(inputId = "MU_wizard_legal_entity", label = "Legal Entity:",
+                                     choices = c("Swiss Re Zurich", "Swiss Re Institute"),
+                                     selected = "Swiss Re Zurich")
+  currency <<- shiny::selectInput(inputId = "MU_wizard_currency", label = "Currency:",
+                                 choices = c("CHF", "EUR", "USD", "JPY"),
+                                 selected = "USD")
+  development_period_frequency <<- shiny::selectInput(inputId = "MU_wizard_development_period_frequency", label = "Development Period Frequency:",
+                                                     choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
+                                                     selected = "Annual")
+  portfolio_name <<- shiny::textInput(inputId = "MU_wizard_portfolio_name", label = "Portfolio Name:",
+                                     placeholder = "Please provide portfolio name")
+
+
   # Reactive value for data wizard:
   upload_wizard <- reactiveValues()
+  upload_wizard_triangle <- reactiveValues()
 
   #----------------------------------------------------------------------------#
   #----------------------------------------------------------------------------#
@@ -251,38 +287,6 @@ app_server <- function(input, output, session) {
 
     # Display the remaing places
     output$MU_UpWiz_allocatedmissingval <- shiny::renderUI({
-      # Defining the components that can be added here:
-      ## Reason: Some of them should be textInputs and some have already predefined choices
-      process_period <- shiny::selectInput(inputId = "MU_wizard_process_period", label = "Process Period:",
-                                    choices = c("P03 2022", "P06 2022", "P09 2022", "P12 2022",
-                                                "P03 2023", "P06 2023", "P09 2023", "P12 2023",
-                                                "P03 2024", "P06 2024", "P09 2024", "P12 2024",
-                                                "P03 2025", "P06 2025", "P09 2025", "P12 2025"),
-                                    selected = "P03 2022")
-      type_of_business <- shiny::textInput(inputId = "MU_wizard_type_of_business",
-                                           label = "Type of Business:", value = "All types")
-      line_of_business <- shiny::textInput(inputId = "MU_wizard_line_of_business",
-                                           label = "Line of Business:", value = "All types")
-      period_type <- shiny::selectInput(inputId = "MU_wizard_period_type", label = "Period Type:",
-                  choices = c("Underwriting"), selected = "Underwriting")
-      process_type <- shiny::selectInput(inputId = "MU_wizard_process_type", label = "Process Type:",
-                  choices = c("Group Reserving L&H", "Local Stat", "Local Reserving",
-                              "Group Reserving P&C", "Local Reserving P&C"), selected = "Local Reserving P&C")
-      description <- shiny::textInput(inputId = "MU_wizard_description", label = "Descriptions:", value = "Anything")
-      origin_frequency <- shiny::selectInput(inputId = "MU_wizard_origin_frquency", label = "Origin Frequency:",
-                  choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
-                  selected = "Annual")
-      legal_entity <- shiny::selectInput(inputId = "MU_wizard_legal_entity", label = "Legal Entity:",
-                  choices = c("Swiss Re Zurich", "Swiss Re Institute"),
-                  selected = "Swiss Re Zurich")
-      currency <- shiny::selectInput(inputId = "MU_wizard_currency", label = "Currency:",
-                  choices = c("CHF", "EUR", "USD", "JPY"),
-                  selected = "USD")
-      development_period_frequency <- shiny::selectInput(inputId = "MU_wizard_development_period_frequency", label = "Development Period Frequency:",
-                  choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
-                  selected = "Annual")
-      portfolio_name <- shiny::textInput(inputId = "MU_wizard_portfolio_name", label = "Portfolio Name:",
-                                         placeholder = "Please provide portfolio name")
 
       # Creating the output variable:
       outputlist <- list()
@@ -421,7 +425,7 @@ app_server <- function(input, output, session) {
     })
 
     # Forward the user to the next view:
-    updateTabItems(session, "overall_sidebar_view", selected = "MU_data_display")
+    shinydashboard::updateTabItems(session, "overall_sidebar_view", selected = "MU_data_display")
 
   })
 
@@ -432,7 +436,7 @@ app_server <- function(input, output, session) {
   })
 
   # Download the template:
-  output$MU_data_display_download <- downloadHandler(
+  output$MU_data_display_download <- shiny::downloadHandler(
     filename = function(){
       filename <- input$MU_data_exportname
       paste(Sys.Date(),"_",filename , ".xlsx", sep = "")
@@ -461,12 +465,43 @@ app_server <- function(input, output, session) {
   #################################
   ###   Upload Manual Data      ###
   #################################
+  # As soon as the data is uploaded, we look for the number of sheets and respective sheetnms:
+  shiny::observeEvent(input$MU_triangle_fileupload, {
+    # Create list with all the data:
+    Fileinp <- input$MU_triangle_fileupload
+    upload_wizard_triangle$Fileinp <- Fileinp
+
+    upload_wizard_triangle$first_raw_data <- fileinp.filereadin(fileinp = Fileinp, shtnms = NULL,
+                                                       range.selection = NULL, mltple = T)
+    # Extracting the filenames and the respective sheetnames:
+    upload_wizard_triangle$filenames <- unlist(lapply(upload_wizard_triangle$first_raw_data, '[[', 4))
+    upload_wizard_triangle$sheetnames <- unique(unlist(lapply(upload_wizard_triangle$first_raw_data, '[[', 5)))
+
+    testlist <<- upload_wizard_triangle$first_raw_data
+    testlist_filenames <- unlist(lapply(testlist, '[[', 4))
+    testlist_sheetnames <- lapply(testlist, '[[', 5)
+  })
+
   # As soon as the load data button is clicked --> Generate the two boxes:
-  observeEvent(input$MU_triangle_load_button , {
+  shiny::observeEvent(input$MU_triangle_load_button , {
     # Ask all the input variables here:
     output$MU_triangle_informationbox <- renderUI({
       outputlist <- list()
-      outputlist[[1]] <- helpText("This need to be changed!")
+      outputlist[[1]] <-
+        box(title = "Triangle Data Information", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
+            helpText("Please provide additional Information about the data:"),
+            portfolio_name,
+            process_period,
+            legal_entity,
+            type_of_business,
+            currency,
+            origin_frequency,
+            process_type,
+            line_of_business,
+            description,
+            period_type,
+            development_period_frequency
+        )
       return(outputlist)
     })
 
@@ -487,24 +522,34 @@ app_server <- function(input, output, session) {
     # Detail information for the triangle box:
     output$MU_triangle_detailbox <- renderUI({
       # Define possbile choices:
-      pos_choices <- c("Paid", "Premium", "Reported", "Case Reserves", "Claims")
+      pos_choices <- c("ACR", "Case Reserves", "Claims Paid", "Claims Reported incl. ACR",
+                       "Claims Reported excl. ACR", "Costs Written Accounted",
+                       "Costs Written Pipeline", "Cedent IBNR", "IBNR", "IBNR USGAAP",
+                       "Premium Written Accounted", "Premium Written Pipeline",
+                       "RIOS (Reinstatement Premiums)", "Premium Underwriter",
+                       "Premium Written US GAAP", "Technical Result")
       # Generate UI:
       outputlist <- list()
       for (i in 1:input$MU_triangle_numtri) {
-        outputlist[[3*(i-1) + 1]] <- htmltools::h5(paste0(i,". Triangle information"),  style = "text-decoration: underline; font-weight: bold")
-        outputlist[[3*(i-1) + 2]] <- fluidRow(
+        outputlist[[2*(i - 1) + 1]] <- fluidRow(
           col_6(
+            htmltools::h5(paste0(i,". Triangle information"),
+                          style = "text-decoration: underline; font-weight: bold"),
             selectInput(inputId = paste0("MU_triangle_selecttritype_", i),
-                        label = paste0("Please select line of business of triangle ", i, ":"),
-                        choices = pos_choices),
+                        label = paste0("Please select 'Type of Amount' of the triangle ", i, ":"),
+                        choices = pos_choices, selected = pos_choices[i]),
             selectInput(inputId = paste0("MU_triangle_uploaded_tab_",i),
                         label = paste0("Please select the source tab:"),
-                        choices = c("Needs to be", "defined", "still"))
+                        choices = upload_wizard_triangle$sheetnames,
+                        selected = upload_wizard_triangle$sheetnames[[1]])
           ),
           col_6(
+            checkboxInput(inputId = paste0("MU_triangle_form_",i),
+                          label = "Data is given in triangular form?", value = T),
             selectInput(inputId = paste0("MU_triangle_uploaded_file_",i),
                         label = paste0("Please select the source excel file:"),
-                        choices = c("Needs to be", "defined", "still")),
+                        choices = upload_wizard_triangle$filenames,
+                        selected = upload_wizard_triangle$filenames[i]),
             fluidRow(
               col_6(
                 textInput(inputId = paste0("MU_triangle_startingcell_",i),
@@ -517,15 +562,18 @@ app_server <- function(input, output, session) {
             )
           )
         )
-        outputlist[[3*(i-1) + 3]] <- hr()
+        outputlist[[2*(i - 1) + 2]] <- hr()
       }
 
-      outputlist[[3*input$MU_triangle_numtri]] <-
+
+
+      outputlist[[2*input$MU_triangle_numtri]] <-
         actionButton(inputId = "MU_triangle_loadtri_toshow",
                      label = "Load Triangles", width = "100%",
                      style = "color: #FFFFFF; background-color:  #24a0ed; border-color:  #24a0ed")
       return(outputlist)
     })
+
 
   })
 
@@ -734,13 +782,13 @@ app_server <- function(input, output, session) {
     })
 
     # If the first selectInput (the number of LoBs) is changed, then the others should have the same value:
-    observeEvent(input$SP_dataupload_reported_numboftri, {
+    shiny::observeEvent(input$SP_dataupload_reported_numboftri, {
       # Running the reactive value in order to not only toggle the value:
       numberofLoBs(input$SP_dataupload_reported_numboftri)
       # Updating all the other values:
-      updateSelectInput(session, "SP_dataupload_paid_numboftri", selected = input$SP_dataupload_reported_numboftri)
-      updateSelectInput(session, "SP_dataupload_IBNR_numboftri", selected = input$SP_dataupload_reported_numboftri)
-      updateSelectInput(session, "input.SP_dataupload_prem_numboftri", selected = input$SP_dataupload_reported_numboftri)
+      shinydashboard::updateSelectInput(session, "SP_dataupload_paid_numboftri", selected = input$SP_dataupload_reported_numboftri)
+      shinydashboard::updateSelectInput(session, "SP_dataupload_IBNR_numboftri", selected = input$SP_dataupload_reported_numboftri)
+      shinydashboard::updateSelectInput(session, "input.SP_dataupload_prem_numboftri", selected = input$SP_dataupload_reported_numboftri)
     })
 
     # If the Portfolio name is changed, then we change automatically the name of the others:
