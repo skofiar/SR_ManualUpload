@@ -12,6 +12,7 @@
 #' @importFrom openxlsx createWorkbook addWorksheet writeData saveWorkbook addStyle createStyle
 #' @importFrom shinyWidgets switchInput pickerInput
 #' @importFrom rlang !! sym
+#' @importFrom reshape2 melt
 #' @noRd
 app_server <- function(input, output, session) {
   # # Defining the options for the dataTableOutput:
@@ -470,16 +471,14 @@ app_server <- function(input, output, session) {
     # Create list with all the data:
     Fileinp <- input$MU_triangle_fileupload
     upload_wizard_triangle$Fileinp <- Fileinp
+    uploadedfiles <<- Fileinp
 
     upload_wizard_triangle$first_raw_data <- fileinp.filereadin(fileinp = Fileinp, shtnms = NULL,
                                                        range.selection = NULL, mltple = T)
+    uploaded <<- upload_wizard_triangle$first_raw_data
     # Extracting the filenames and the respective sheetnames:
     upload_wizard_triangle$filenames <- unlist(lapply(upload_wizard_triangle$first_raw_data, '[[', 4))
     upload_wizard_triangle$sheetnames <- unique(unlist(lapply(upload_wizard_triangle$first_raw_data, '[[', 5)))
-
-    testlist <<- upload_wizard_triangle$first_raw_data
-    testlist_filenames <- unlist(lapply(testlist, '[[', 4))
-    testlist_sheetnames <- lapply(testlist, '[[', 5)
   })
 
   # As soon as the load data button is clicked --> Generate the two boxes:
@@ -490,17 +489,9 @@ app_server <- function(input, output, session) {
       outputlist[[1]] <-
         box(title = "Triangle Data Information", solidHeader = TRUE, status = "info", collapsible = T, width = "100%",
             helpText("Please provide additional Information about the data:"),
-            portfolio_name,
-            process_period,
-            legal_entity,
-            type_of_business,
-            currency,
-            origin_frequency,
-            process_type,
-            line_of_business,
-            description,
-            period_type,
-            development_period_frequency
+            portfolio_name, process_period, legal_entity, type_of_business,
+            currency, origin_frequency, process_type, line_of_business,
+            description,period_type, development_period_frequency
         )
       return(outputlist)
     })
@@ -514,6 +505,7 @@ app_server <- function(input, output, session) {
             helpText("For each selection, please indicate the type of triangle,
                      in which file and in which tab the triangle is located
                      and in which range."),
+            helpText("Please ", strong("make sure"), "that the uploaded data contains the origin period in the first column!"),
             uiOutput("MU_triangle_detailbox")
         )
       return(outputlist)
@@ -565,8 +557,6 @@ app_server <- function(input, output, session) {
         outputlist[[2*(i - 1) + 2]] <- hr()
       }
 
-
-
       outputlist[[2*input$MU_triangle_numtri]] <-
         actionButton(inputId = "MU_triangle_loadtri_toshow",
                      label = "Load Triangles", width = "100%",
@@ -575,6 +565,46 @@ app_server <- function(input, output, session) {
     })
 
 
+  })
+
+  # As soon as the data is loaded and the needed information is provided we start with the calculation:
+  shiny::observeEvent(input$MU_triangle_loadtri_toshow, {
+
+    for (i in 1:input$MU_triangle_numtri) {
+      # In case multiple files were uploaded, deduce from which file we want to download the data:
+      if (dim(upload_wizard_triangle$Fileinp)[1] > 1) {
+        #File input row of interest:
+        filupload_number <- which( input[[paste0("MU_triangle_uploaded_file_",i)]] ==
+                                     upload_wizard_triangle$Fileinp[,1])
+      }
+
+      # Read in the triangles:
+      upload_wizard_triangle[[paste0("Triangle_data_",i)]] <- fileinp.filereadin(
+                      fileinp = upload_wizard_triangle$Fileinp[filupload_number,],
+                      shtnms = input[[paste0("MU_triangle_uploaded_tab_",i)]],
+                      range.selection = paste0(input[[paste0("MU_triangle_startingcell_",i)]],":",
+                                               input[[paste0("MU_triangle_endingcell_",i)]]),
+                      mltple = F)[[1]]
+
+      print(upload_wizard_triangle[[paste0("Triangle_data_",i)]])
+      print(input$MU_triangle_cumorinc)
+
+      test_tri_data <<- reshape2::melt(upload_wizard_triangle[[paste0("Triangle_data_",i)]])
+
+      if ((input$MU_triangle_cumorinc == F) && input[[paste0("MU_triangle_form_",i)]]) {
+        # Transforming data frame into a long format DF:
+        long_tri <- as.data.frame(reshape2::melt(upload_wizard_triangle[[paste0("Triangle_data_",i)]]))
+        colnames(long_tri) <- c("origin", "development", "value")
+        # Delete all NA columns:
+        long_tri <- long_tri[!is.na(long_tri$value),]
+
+
+        print(long_tri)
+
+        print(as.data.frame(upload_wizard_triangle[[paste0("Triangle_data_",i)]]))
+      }
+
+    }
   })
 
 
@@ -792,8 +822,6 @@ app_server <- function(input, output, session) {
     })
 
     # If the Portfolio name is changed, then we change automatically the name of the others:
-
-
     output$SP_dataupload_IBNR_selection <- renderUI({
       # Create the outputlist
       outputlist <- list()

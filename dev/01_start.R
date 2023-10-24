@@ -79,6 +79,7 @@ usethis::use_package("openxlsx")
 
 # For manipulating DFs:
 usethis::use_package("rlang")
+usethis::use_package("reshape2")
 
 # You're now set! ----
 

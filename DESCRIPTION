@@ -16,6 +16,7 @@ Imports:
     openxlsx,
     readr,
     readxl,
+    reshape2,
     rlang,
     shiny (>= 1.7.5),
     shinydashboard,

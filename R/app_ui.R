@@ -113,8 +113,17 @@ app_ui <- function(request) {
                                                     label = "Upload data:",
                                                     multiple = T, accept = c(".csv",'.xlsx', '.xls', '.xlsm')
                                           ),
+                                          fluidRow(
+                                            col_8(
+                                              htmltools::h5("Is the data given incremental?",
+                                                            style = "font-weight: bold")),
+                                            col_4(
+                                              switchInput(inputId = "MU_triangle_cumorinc",
+                                                          label = " ", value = F, onLabel = "Yes", offLabel = "No"),)
+                                          ),
                                           numericInput(inputId = "MU_triangle_numtri", label = "Number of triangles of interest:",
                                                        value = 3, min = 1, max = 10, step = 1),
+
                                           actionButton(inputId = "MU_triangle_load_button",
                                                        label = "Load Data", width = "100%"),
                                     ),
