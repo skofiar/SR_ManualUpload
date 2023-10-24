@@ -143,6 +143,7 @@ app_ui <- function(request) {
                                 helpText("As soon as you have updated the triangle data and given us the
                                          needed information you'll find the prepared SPIRE template here.
                                          After checking the table, you can export the template."),
+                                uiOutput("MU_triangle_displaygenerator")
 
                         ),
 

@@ -633,8 +633,6 @@ app_server <- function(input, output, session) {
           # Save the data frame:
           upload_wizard_triangle[[paste0("Triangle_data_",i,"_datatable_cum")]] <-
             cum_df[!is.na(cum_df$Amount),]
-
-          print(cum_df[!is.na(cum_df$Amount),])
         }
 
       }else {
@@ -666,9 +664,83 @@ app_server <- function(input, output, session) {
           tri_total
 
       }
-
-
+      View(upload_wizard_triangle)
     }
+
+    output$MU_triangle_displaygenerator <- renderUI({
+      outputlist <- list()
+      # Generate the Download Box:
+      outputlist[[1]] <-
+        box(title = "Export Template", solidHeader = TRUE, status = "info",
+            collapsible = T, width = "100%",
+            fluidRow(
+              col_10(
+                helpText("Please check if you are happy with the processed data.
+                         Note that this data as well as the template generated $
+                         from this data is displayed below.")
+              ),
+              col_2(
+                shiny::downloadButton('MU_triangle_download', 'Create SPIRE Template', width = "100%",
+                                      style = "color: #FFFFFF; background-color:  #24a0ed;
+                               border-color:  #24a0ed", icon = shiny::icon("plus"))
+              )
+            )
+        )
+
+      # Generate the box with uploaded data displayed:
+      outputlist[[2]] <-
+        fluidRow(
+          col_6(
+            box(title = "Uploaded Data", solidHeader = TRUE, status = "info",
+                collapsible = T, width = "100%",
+                uiOutput("MU_triangle_displaygenerator_triangles"),
+            )
+          ),
+          col_6(
+            box(title = "SPIRE Template", solidHeader = TRUE, status = "info",
+                collapsible = T, width = "100%",
+                helpText("Here, you find the SPIRE template created out of the uploaded data:"),
+                DT::dataTableOutput("MU_triangle_SPIRE_template")
+            )
+          )
+        )
+      return(outputlist)
+    })
+
+    # Generate the triangles display:
+    output$MU_triangle_displaygenerator_triangles <- renderUI({
+      outputlist <- list()
+
+      for (i in 1:input$MU_triangle_numtri) {
+        outputlist[[5*(i - 1) + 1]] <- h5(paste0(input[[paste0("MU_triangle_selecttritype_", i)]], " - Incremental Triangle"),
+            style = "text-decoration: underline; font-weight: bold")
+        outputlist[[5*(i - 1) + 2]] <- DT::dataTableOutput(paste0("MU_triangle_SPIRE_template_",i,"_inc"))
+        outputlist[[5*(i - 1) + 3]] <- h5(paste0(input[[paste0("MU_triangle_selecttritype_", i)]], " - Cumulative Triangle"),
+            style = "text-decoration: underline; font-weight: bold")
+        outputlist[[5*(i - 1) + 4]] <- DT::dataTableOutput(paste0("MU_triangle_SPIRE_template_",i,"_cum"))
+        outputlist[[5*(i - 1) + 5]] <- hr()
+      }
+      return(outputlist)
+    })
+
+    for (i in 1:input$MU_triangle_numtri) {
+      #Preparing the Incremental triangle data:
+      print("Inc")
+      print(upload_wizard_triangle[[paste0("Triangle_data_",i,"_inc")]])
+      output[[paste0("MU_triangle_SPIRE_template_",i,"_inc")]] <- DT::renderDataTable({
+        return(datatable(upload_wizard_triangle[[paste0("Triangle_data_",i,"_inc")]] , options = DToptions,
+                         class = 'cell-border stripe', editable = T, rownames = F, filter = "none"))
+      })
+
+      #Preparing the Incremental triangle data:
+      output[[paste0("MU_triangle_SPIRE_template_",i,"_cum")]] <- DT::renderDataTable({
+        print("Cum")
+        print(upload_wizard_triangle[[paste0("Triangle_data_",i,"_cum")]])
+        return(datatable(upload_wizard_triangle[[paste0("Triangle_data_",i,"_cum")]] , options = DToptions,
+                         class = 'cell-border stripe', editable = T, rownames = F, filter = "none"))
+      })
+    }
+
   })
 
 
