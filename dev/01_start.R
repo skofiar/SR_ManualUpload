@@ -62,8 +62,8 @@ golem::use_favicon() # path = "path/to/ico". Can be an online file.
 golem::use_utils_ui(with_test = TRUE)
 golem::use_utils_server(with_test = TRUE)
 
-usethis::use_package("dplyr")
-usethis::use_pipe()
+
+# Shiny packages:
 usethis::use_package("shinydashboard")
 usethis::use_package("shinyjs")
 usethis::use_package("htmltools")
@@ -78,6 +78,8 @@ usethis::use_package("shinyWidgets")
 usethis::use_package("openxlsx")
 
 # For manipulating DFs:
+usethis::use_package("dplyr")
+usethis::use_pipe()
 usethis::use_package("rlang")
 usethis::use_package("reshape2")
 

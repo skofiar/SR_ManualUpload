@@ -9,6 +9,7 @@
 #' @import htmltools
 #' @import ChainLadder
 #' @import DT
+#' @import dplyr
 #' @importFrom openxlsx createWorkbook addWorksheet writeData saveWorkbook addStyle createStyle
 #' @importFrom shinyWidgets switchInput pickerInput
 #' @importFrom rlang !! sym
@@ -586,23 +587,86 @@ app_server <- function(input, output, session) {
                                                input[[paste0("MU_triangle_endingcell_",i)]]),
                       mltple = F)[[1]]
 
-      print(upload_wizard_triangle[[paste0("Triangle_data_",i)]])
-      print(input$MU_triangle_cumorinc)
+      df_ofinterest <- upload_wizard_triangle[[paste0("Triangle_data_",i)]]
 
-      test_tri_data <<- reshape2::melt(upload_wizard_triangle[[paste0("Triangle_data_",i)]])
+      if (input[[paste0("MU_triangle_form_",i)]]) {
+        # Allocating rownames and getting them out of the data frame:
+        colnames(df_ofinterest) <- -1:(dim(df_ofinterest)[2] - 2)
 
-      if ((input$MU_triangle_cumorinc == F) && input[[paste0("MU_triangle_form_",i)]]) {
         # Transforming data frame into a long format DF:
-        long_tri <- as.data.frame(reshape2::melt(upload_wizard_triangle[[paste0("Triangle_data_",i)]]))
-        colnames(long_tri) <- c("origin", "development", "value")
-        # Delete all NA columns:
-        long_tri <- long_tri[!is.na(long_tri$value),]
+        long_tri <- as.data.frame(reshape2::melt(df_ofinterest))
+        colnames(long_tri) <- c("Origin Period", "Development Period", "Amount")
 
+        # Depending if the data is given in cum or incr structure, we do the following:
+        if (input$MU_triangle_cumorinc == F) {
+          # Delete all NA columns:
+          upload_wizard_triangle[[paste0("Triangle_data_",i,"_datatable_cum")]] <-
+            long_tri <- long_tri[!is.na(long_tri$Amount),]
 
-        print(long_tri)
+          # Convert from data frame to triangle and save it to the reactive Value:
+          upload_wizard_triangle[[paste0("Triangle_data_",i,"_cum")]] <-
+            trans_df_tri <- ChainLadder::as.triangle(long_tri, origin = "Origin Period",
+                                                     dev = "Development Period", value = "Amount")
+          upload_wizard_triangle[[paste0("Triangle_data_",i,"_inc")]] <-
+            inc_tri <- ChainLadder::cum2incr(trans_df_tri)
 
-        print(as.data.frame(upload_wizard_triangle[[paste0("Triangle_data_",i)]]))
+          # Save the data frame version of this data:
+          upload_wizard_triangle[[paste0("Triangle_data_",i,"_datatable_inc")]] <-
+            as.data.frame(inc_tri)
+
+        }else{
+          # Delete all NA columns:
+          upload_wizard_triangle[[paste0("Triangle_data_",i,"_datatable_inc")]] <-
+            long_tri <- long_tri[!is.na(long_tri$Amount),]
+
+          # Convert from data frame to triangle and save it to the reactive Value:
+          upload_wizard_triangle[[paste0("Triangle_data_",i,"_inc")]] <-
+            trans_df_tri <- ChainLadder::as.triangle(long_tri, origin = "Origin Period",
+                                                     dev = "Development Period", value = "Amount")
+
+          upload_wizard_triangle[[paste0("Triangle_data_",i,"_cum")]] <-
+            cum_tri <- ChainLadder::incr2cum(trans_df_tri)
+
+          # Save the data frame version of this data:
+          cum_df <- as.data.frame(cum_tri) %>%
+            rename("Amount" = "value")
+          # Save the data frame:
+          upload_wizard_triangle[[paste0("Triangle_data_",i,"_datatable_cum")]] <-
+            cum_df[!is.na(cum_df$Amount),]
+
+          print(cum_df[!is.na(cum_df$Amount),])
+        }
+
+      }else {
+        colnames(df_ofinterest) <- c("Origin Period", "Amount")
+
+        # Preparing the output data:
+        df_total <- df_ofinterest %>%
+          mutate("Development Period" = 0) %>%
+          select("Origin Period", "Development Period", "Amount")
+
+        # Setting the development periods in such a way so that the amount are reflected
+        ## in the last calender period:
+        max_val <- max(as.numeric(df_total[,"Origin Period"]))
+        df_total_zw <- df_total %>% mutate("MaxVal" = max_val)
+        df_total["Development Period"] <- apply(df_total_zw, 1, function(x)
+          {as.numeric(x["MaxVal"]) - as.numeric(x["Origin Period"])})
+
+        # Saving the data frames:
+        upload_wizard_triangle[[paste0("Triangle_data_",i,"_datatable_inc")]] <-
+          upload_wizard_triangle[[paste0("Triangle_data_",i,"_datatable_cum")]] <-
+          df_total
+
+        tri_total <- ChainLadder::as.triangle(df_total, origin = "Origin Period",
+                                    dev = "Development Period", value = "Amount")
+        print(df_total)
+        print(tri_total)
+        upload_wizard_triangle[[paste0("Triangle_data_",i,"_cum")]] <-
+          upload_wizard_triangle[[paste0("Triangle_data_",i,"_inc")]] <-
+          tri_total
+
       }
+
 
     }
   })
