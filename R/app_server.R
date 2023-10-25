@@ -1,5 +1,4 @@
-
-
+options(shiny.maxRequestSize = 1000 * 1024^2)
 #' The application server-side
 #'
 #' @param input,output,session Internal parameters for {shiny}.
@@ -245,13 +244,15 @@ app_server <- function(input, output, session) {
           outputlist[[i]] <- shiny::fluidRow(
             col_6(shiny::selectInput(inputId = paste0("MU_wizard_",gsub(" ", "_", tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 1]))),
                               label = upload_wizard$given_SPIRE_columns[2*(i - 1) + 1],
-                              choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 1]), 1,3),
-                                                                     tolower(upload_wizard$colnames))])
+                              # choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 1]), 1,3),
+                              #                                        tolower(upload_wizard$colnames))])
+                              choices = upload_wizard$colnames)
             ),
             col_6(shiny::selectInput(inputId = paste0("MU_wizard_",gsub(" ", "_", tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 2]))),
                               label = upload_wizard$given_SPIRE_columns[2*(i - 1) + 2],
-                              choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 2]), 1,3),
-                                                                     tolower(upload_wizard$colnames))])
+                              # choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 2]), 1,3),
+                              #                                        tolower(upload_wizard$colnames))])
+                              choices = upload_wizard$colnames)
             )
           )
         }
@@ -261,13 +262,15 @@ app_server <- function(input, output, session) {
           outputlist[[i]] <- shiny::fluidRow(
             col_6(shiny::selectInput(inputId = paste0("MU_wizard_",gsub(" ", "_", tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 1]))),
                               label = upload_wizard$given_SPIRE_columns[2*(i - 1) + 1],
-                              choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 1]), 1,3),
-                                                                     tolower(upload_wizard$colnames))])
+                              # choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 1]), 1,3),
+                              #                                        tolower(upload_wizard$colnames))])
+                              choices = upload_wizard$colnames)
             ),
             col_6(shiny::selectInput(inputId = paste0("MU_wizard_",gsub(" ", "_", tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 2]))),
                               label = upload_wizard$given_SPIRE_columns[2*(i - 1) + 2],
-                              choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 2]), 1,3),
-                                                                     tolower(upload_wizard$colnames))])
+                              # choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[2*(i - 1) + 2]), 1,3),
+                              #                                        tolower(upload_wizard$colnames))])
+                              choices = upload_wizard$colnames)
             )
           )
         }
@@ -393,6 +396,23 @@ app_server <- function(input, output, session) {
 
     }
 
+    # Development Period should start with 0 and therefore if there is no 0 element
+    ## we need to shift it:
+    if (min(as.numeric(dummy_res$`Development Period`)) >= 3 &&
+        dummy_res$`Development Period frequency` == "Quarterly") {
+      dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 3
+    }else if(min(as.numeric(dummy_res$`Development Period`)) >= 1 &&
+             dummy_res$`Development Period frequency` == "Annual"){
+      dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 1
+    }else if(min(as.numeric(dummy_res$`Development Period`)) >= 1 &&
+             dummy_res$`Development Period frequency` == "Monthly"){
+      dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 1
+    }else if(min(as.numeric(dummy_res$`Development Period`)) >= 1 &&
+             dummy_res$`Development Period frequency` == "Half-yearly"){
+      dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 1
+    }
+
+
     # Save the template to the reactive list
     upload_wizard$final_df <- dummy_res
 
@@ -447,15 +467,19 @@ app_server <- function(input, output, session) {
       # Create the working directory:
       wb <- createWorkbook()
 
+      # Convert the Amount to number:
+      final_df <- upload_wizard$final_df
+      final_df$Amount <- round(as.numeric(final_df$Amount), digits = 2)
+
       # Create a new Tab in the workbook, with the predefined name:
       addWorksheet(wb,"data")
 
       # Reads out the triangle data and saves it in a temp. variabel
-      writeData(wb = wb, sheet = "data", x = upload_wizard$final_df,
+      writeData(wb = wb, sheet = "data", x = final_df,
                 rowNames = F ,colNames = TRUE)
 
       # Adding the standard Excel Style to the workbook:
-      addingstyletowb(wb = wb, sheetnm = "data", data = upload_wizard$final_df)
+      addingstyletowb(wb = wb, sheetnm = "data", data = final_df)
 
       # Save the file
       saveWorkbook(wb, file, overwrite = TRUE)
