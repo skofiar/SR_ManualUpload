@@ -42,7 +42,7 @@ app_server <- function(input, output, session) {
                                      choices = c("Group Reserving L&H", "Local Stat", "Local Reserving",
                                                  "Group Reserving P&C", "Local Reserving P&C"), selected = "Local Reserving P&C")
   description <<- shiny::textInput(inputId = "MU_wizard_description", label = "Descriptions:", value = "Anything")
-  origin_frequency <<- shiny::selectInput(inputId = "MU_wizard_origin_frquency", label = "Origin Frequency:",
+  origin_frequency <<- shiny::selectInput(inputId = "MU_wizard_origin_frequency", label = "Origin Frequency:",
                                          choices = c("Monthly", "Quarterly", "Half-yearly", "Annual"),
                                          selected = "Annual")
   legal_entity <<- shiny::selectInput(inputId = "MU_wizard_legal_entity", label = "Legal Entity:",
@@ -278,8 +278,9 @@ app_server <- function(input, output, session) {
           shiny::fluidRow(
             col_6(shiny::selectInput(inputId = paste0("MU_wizard_",gsub(" ", "_", tolower(upload_wizard$given_SPIRE_columns[length(upload_wizard$given_SPIRE_columns)]))),
                               label = upload_wizard$given_SPIRE_columns[length(upload_wizard$given_SPIRE_columns)],
-                              choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[length(upload_wizard$given_SPIRE_columns)]), 1,3),
-                                                                     tolower(upload_wizard$colnames))])
+                              # choices = upload_wizard$colnames[grepl(substr(tolower(upload_wizard$given_SPIRE_columns[length(upload_wizard$given_SPIRE_columns)]), 1,3),
+                              #                                        tolower(upload_wizard$colnames))])
+                              choices = upload_wizard$colnames)
             ),
             col_6()
           )
@@ -372,44 +373,51 @@ app_server <- function(input, output, session) {
                                   "Origin frequency", "Development Period frequency",
                                   "Origin Period", "Development Period", "Type of Amount", "Amount")
 
+
     # For each given column name, we change
     for (i in upload_wizard$given_SPIRE_columns) {
+      print(i)
       dummy_res[,which(colnames(dummy_res) %in% i)] <- dattab[,which(colnames(dattab) %in% input[[paste0("MU_wizard_",gsub(" ", "_", tolower(i)))]])]
     }
 
     # Adding to the result dataframe also the not in the data table given columns:
     for (j in upload_wizard$remaining_columns) {
+      print(j)
       # Only in the case of the Portfolio Name we need to do a concatenation
       # as there could be multiple LoBs in the datatable and therefore we can't name them
       # all the same
       if (j != "Portfolio Name") {
-        dummy_res[, j] <- input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]]
+        dummy_res[, which(colnames(dummy_res) %in% j)] <- input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]]
       }else{
         if (all(is.na(dummy_res[,"Line of Business"]))) {
-          dummy_res[, j] <- paste0(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]],"_",
+          dummy_res[, which(colnames(dummy_res) %in% j)] <- paste0(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]],"_",
                                    input[[paste0("MU_wizard_",gsub(" ", "_", tolower("Line of Business")))]])
         }else{
-          dummy_res[, j] <- paste0(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]],"_",dummy_res[,"Line of Business"])
+          dummy_res[, which(colnames(dummy_res) %in% j)] <-
+            paste0(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]],"_",dummy_res[,"Line of Business"])
+
         }
 
       }
 
     }
 
+    testdf <<-dummy_res
+
     # Development Period should start with 0 and therefore if there is no 0 element
     ## we need to shift it:
-    if (min(as.numeric(dummy_res$`Development Period`)) >= 3 &&
-        dummy_res$`Development Period frequency` == "Quarterly") {
+    if ( min(as.numeric(dummy_res$`Development Period`)) >= 3 &&
+        unique(dummy_res$`Development Period frequency`) == "Quarterly") {
       dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 3
-    }else if(min(as.numeric(dummy_res$`Development Period`)) >= 1 &&
-             dummy_res$`Development Period frequency` == "Annual"){
+    }else if ( min(as.numeric(dummy_res$`Development Period`)) >= 1 &&
+               unique(dummy_res$`Development Period frequency`) == "Annual") {
       dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 1
-    }else if(min(as.numeric(dummy_res$`Development Period`)) >= 1 &&
-             dummy_res$`Development Period frequency` == "Monthly"){
+    }else if ( min(as.numeric(dummy_res$`Development Period`)) >= 1 &&
+               unique(dummy_res$`Development Period frequency`) == "Monthly") {
       dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 1
-    }else if(min(as.numeric(dummy_res$`Development Period`)) >= 1 &&
-             dummy_res$`Development Period frequency` == "Half-yearly"){
-      dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 1
+    }else if ( min(as.numeric(dummy_res$`Development Period`)) >= 6 &&
+               unique(dummy_res$`Development Period frequency`) == "Half-yearly") {
+      dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 6
     }
 
 
