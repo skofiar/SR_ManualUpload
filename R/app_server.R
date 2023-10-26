@@ -376,24 +376,23 @@ app_server <- function(input, output, session) {
 
     # For each given column name, we change
     for (i in upload_wizard$given_SPIRE_columns) {
-      print(i)
-      dummy_res[,which(colnames(dummy_res) %in% i)] <- dattab[,which(colnames(dattab) %in% input[[paste0("MU_wizard_",gsub(" ", "_", tolower(i)))]])]
+      dummy_res[,which(colnames(dummy_res) %in% i)] <-
+        dattab[,which(colnames(dattab) %in% input[[paste0("MU_wizard_",gsub(" ", "_", tolower(i)))]])]
     }
 
     # Adding to the result dataframe also the not in the data table given columns:
     for (j in upload_wizard$remaining_columns) {
-      print(j)
       # Only in the case of the Portfolio Name we need to do a concatenation
       # as there could be multiple LoBs in the datatable and therefore we can't name them
       # all the same
       if (j != "Portfolio Name") {
-        dummy_res[, which(colnames(dummy_res) %in% j)] <- input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]]
+        dummy_res[, j] <- input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]]
       }else{
         if (all(is.na(dummy_res[,"Line of Business"]))) {
-          dummy_res[, which(colnames(dummy_res) %in% j)] <- paste0(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]],"_",
+          dummy_res[, j] <- paste0(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]],"_",
                                    input[[paste0("MU_wizard_",gsub(" ", "_", tolower("Line of Business")))]])
         }else{
-          dummy_res[, which(colnames(dummy_res) %in% j)] <-
+          dummy_res[, j] <-
             paste0(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]],"_",dummy_res[,"Line of Business"])
 
         }
@@ -402,29 +401,42 @@ app_server <- function(input, output, session) {
 
     }
 
-    testdf <<-dummy_res
 
-    # Development Period should start with 0 and therefore if there is no 0 element
-    ## we need to shift it:
-    if ( min(as.numeric(dummy_res$`Development Period`)) >= 3 &&
-        unique(dummy_res$`Development Period frequency`) == "Quarterly") {
-      dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 3
-    }else if ( min(as.numeric(dummy_res$`Development Period`)) >= 1 &&
-               unique(dummy_res$`Development Period frequency`) == "Annual") {
-      dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 1
-    }else if ( min(as.numeric(dummy_res$`Development Period`)) >= 1 &&
-               unique(dummy_res$`Development Period frequency`) == "Monthly") {
-      dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 1
-    }else if ( min(as.numeric(dummy_res$`Development Period`)) >= 6 &&
-               unique(dummy_res$`Development Period frequency`) == "Half-yearly") {
-      dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 6
-    }
+    # # Development Period should start with 0 and therefore if there is no 0 element
+    # ## we need to shift it:
+    # if ( min(as.numeric(dummy_res$`Development Period`)) >= 3 &&
+    #     unique(dummy_res$`Development Period frequency`) == "Quarterly") {
+    #   dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 3
+    # }else if ( min(as.numeric(dummy_res$`Development Period`)) >= 1 &&
+    #            unique(dummy_res$`Development Period frequency`) == "Annual") {
+    #   dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 1
+    # }else if ( min(as.numeric(dummy_res$`Development Period`)) >= 1 &&
+    #            unique(dummy_res$`Development Period frequency`) == "Monthly") {
+    #   dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 1
+    # }else if ( min(as.numeric(dummy_res$`Development Period`)) >= 6 &&
+    #            unique(dummy_res$`Development Period frequency`) == "Half-yearly") {
+    #   dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 6
+    # }
+    #
+    # # Get rid of all Amount that are 0 in the data table:
+    # ## Important that this is done here, as there could be some
+    # dummy_res <- dummy_res[which(dummy_res$Amount != 0),]
+    #
+    # # If the Origin Period has only 4 digits, we add "01" to it
+    # ## We check only the first one, as this should be sufficient for the rest
+    # if (as.numeric(dummy_res$`Origin Period`[1]) < 100000) {
+    #   dummy_res$`Origin Period` <- as.numeric(paste0(dummy_res$`Origin Period`, "01"))
+    # }
+    #
+    # # Make Uniqueness of the rows save:
+    # dummy_res <- remove_duplicates_bysum(df_to_manipulate = dummy_res)
 
 
     # Save the template to the reactive list
-    upload_wizard$final_df <- dummy_res
+    # upload_wizard$final_df <- dummy_res
+    upload_wizard$final_df <- template_prep(dummy_res)
 
-    #Generate the box element, that allows us to download the data table
+    #Generate the box element, that allws us to download the data table
     output$MU_data_display_exportbox <- shiny::renderUI({
       outputlist <- list()
       outputlist[[1]] <-
@@ -475,9 +487,11 @@ app_server <- function(input, output, session) {
       # Create the working directory:
       wb <- createWorkbook()
 
-      # Convert the Amount to number:
+      # Convert to number:
       final_df <- upload_wizard$final_df
       final_df$Amount <- round(as.numeric(final_df$Amount), digits = 2)
+      final_df$`Development Period` <- as.numeric(final_df$`Development Period`)
+      final_df$`Origin Period` <- as.numeric(final_df$`Origin Period`)
 
       # Create a new Tab in the workbook, with the predefined name:
       addWorksheet(wb,"data")
