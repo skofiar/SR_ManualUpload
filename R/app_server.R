@@ -15,6 +15,9 @@ options(shiny.maxRequestSize = 1000 * 1024^2)
 #' @importFrom reshape2 melt
 #' @noRd
 app_server <- function(input, output, session) {
+  #################################
+  ###   Initialization          ###
+  #################################
   # # Defining the options for the dataTableOutput:
   DToptions <<- list(autoWidth = FALSE, scrollX = TRUE,
                     columnDefs = list(list(width = "125px", targets = "_all")),dom = 'tpB',
@@ -62,8 +65,6 @@ app_server <- function(input, output, session) {
   upload_wizard <- reactiveValues()
   upload_wizard_triangle <- reactiveValues()
 
-  #----------------------------------------------------------------------------#
-  #----------------------------------------------------------------------------#
   #################################
   ###   Upload Manual Data      ###
   #################################
@@ -100,8 +101,20 @@ app_server <- function(input, output, session) {
       # uiOutput for a potential range selection:
       outputlist[[3]] <- uiOutput("MU_rangeseleciton_ui")
 
+      # Range selection
+      outputlist[[4]] <- fluidRow(
+        col_8(
+          helpText("Cumulative Data format given?")
+        ),
+        col_4(
+          switchInput(inputId = "MU_fileupload_cumulativeformat",
+                      label = " ", value = F,
+                      onLabel = "Yes", offLabel = "No")
+        )
+      )
+
       # File Upload Button
-      outputlist[[4]] <- actionButton(inputId = "MU_fileupload_button",
+      outputlist[[5]] <- actionButton(inputId = "MU_fileupload_button",
                                       label = "Load File", width = "100%",
                                       style = "color: #FFFFFF; background-color:  #24a0ed; border-color:  #24a0ed")
 
@@ -121,11 +134,11 @@ app_server <- function(input, output, session) {
           fluidRow(
             col_6(
               textInput(inputId = "MU_upload_startingrange", label = "Starting Cell:",
-                        placeholder = "Starting cell in excel")
+                        placeholder = "E.g. A10")
             ),
             col_6(
               textInput(inputId = "MU_upload_endingrange", label = "Ending Cell:",
-                        placeholder = "Ending cell in excel")
+                        placeholder = "E.g. F39")
             )
           )
       }
@@ -352,10 +365,6 @@ app_server <- function(input, output, session) {
 
   })
 
-
-
-
-
   #################################
   ### Display Data & Download   ###
   #################################
@@ -401,40 +410,11 @@ app_server <- function(input, output, session) {
 
     }
 
-
-    # # Development Period should start with 0 and therefore if there is no 0 element
-    # ## we need to shift it:
-    # if ( min(as.numeric(dummy_res$`Development Period`)) >= 3 &&
-    #     unique(dummy_res$`Development Period frequency`) == "Quarterly") {
-    #   dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 3
-    # }else if ( min(as.numeric(dummy_res$`Development Period`)) >= 1 &&
-    #            unique(dummy_res$`Development Period frequency`) == "Annual") {
-    #   dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 1
-    # }else if ( min(as.numeric(dummy_res$`Development Period`)) >= 1 &&
-    #            unique(dummy_res$`Development Period frequency`) == "Monthly") {
-    #   dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 1
-    # }else if ( min(as.numeric(dummy_res$`Development Period`)) >= 6 &&
-    #            unique(dummy_res$`Development Period frequency`) == "Half-yearly") {
-    #   dummy_res$`Development Period` <- as.numeric(dummy_res$`Development Period`) - 6
-    # }
-    #
-    # # Get rid of all Amount that are 0 in the data table:
-    # ## Important that this is done here, as there could be some
-    # dummy_res <- dummy_res[which(dummy_res$Amount != 0),]
-    #
-    # # If the Origin Period has only 4 digits, we add "01" to it
-    # ## We check only the first one, as this should be sufficient for the rest
-    # if (as.numeric(dummy_res$`Origin Period`[1]) < 100000) {
-    #   dummy_res$`Origin Period` <- as.numeric(paste0(dummy_res$`Origin Period`, "01"))
-    # }
-    #
-    # # Make Uniqueness of the rows save:
-    # dummy_res <- remove_duplicates_bysum(df_to_manipulate = dummy_res)
-
-
-    # Save the template to the reactive list
-    # upload_wizard$final_df <- dummy_res
+    data_res <<- dummy_res
+    # Prepare the SPIRE Template and save it to the reactive list
     upload_wizard$final_df <- template_prep(dummy_res)
+
+    data_res_2 <<- upload_wizard$final_df
 
     #Generate the box element, that allws us to download the data table
     output$MU_data_display_exportbox <- shiny::renderUI({

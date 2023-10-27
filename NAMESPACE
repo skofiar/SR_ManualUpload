@@ -2,6 +2,7 @@
 
 export("%>%")
 export(addingstyletowb)
+export(create_triangle_fromdata)
 export(fileinp.filereadin)
 export(remove_duplicates_bysum)
 export(run_app)

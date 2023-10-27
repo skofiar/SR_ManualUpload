@@ -16,13 +16,16 @@ The following tasks are done here:
 4. The SPIRE template needs to have a unique key
      (Key = Portfolio name + Origin Period + Development Period + Type of Amount).
       Using the function "remove_duplicates_by_sum()", we summarize the duplicates
-      and remove the duplicated rows.}
+      and remove the duplicated rows.
+5. If Case Reserves are not given in the data table, then we need to add it
+     "manually" by calculating:
+     Case Reserves = Claims Reported excl. ACR - Claims Paid}
 \usage{
 template_prep(datamat)
 }
 \arguments{
 \item{datamat}{Data frame/table that has already the right number and type of
-of columns but does not satisfy the/one of the 4 conditions above.}
+of columns but does not satisfy the/one of the 5 conditions above.}
 }
 \value{
 datamat, in the template format needed by SPIRE
@@ -43,4 +46,7 @@ The following tasks are done here:
      (Key = Portfolio name + Origin Period + Development Period + Type of Amount).
       Using the function "remove_duplicates_by_sum()", we summarize the duplicates
       and remove the duplicated rows.
+5. If Case Reserves are not given in the data table, then we need to add it
+     "manually" by calculating:
+     Case Reserves = Claims Reported excl. ACR - Claims Paid
 }

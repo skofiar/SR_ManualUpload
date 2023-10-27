@@ -16,9 +16,12 @@
 #'      (Key = Portfolio name + Origin Period + Development Period + Type of Amount).
 #'       Using the function "remove_duplicates_by_sum()", we summarize the duplicates
 #'       and remove the duplicated rows.
+#' 5. If Case Reserves are not given in the data table, then we need to add it
+#'      "manually" by calculating:
+#'      Case Reserves = Claims Reported excl. ACR - Claims Paid
 #'
 #' @param datamat Data frame/table that has already the right number and type of
-#'                of columns but does not satisfy the/one of the 4 conditions above.
+#'                of columns but does not satisfy the/one of the 5 conditions above.
 #' @return datamat, in the template format needed by SPIRE
 #' @export
 template_prep <- function(datamat){
@@ -50,6 +53,23 @@ template_prep <- function(datamat){
 
   # Make Uniqueness of the rows save:
   datamat <- remove_duplicates_bysum(df_to_manipulate = datamat)
+
+  ## Do Cumulative Manipulation!
+  ## Need first to transform everything to triangles and then the cum2incr and then the creation of the type of amount
+  ## Change also the naming above!
+
+  # Calculation of Claims Reported if there is no Claims Reported in Type of Amount:
+  # unique_toas <- unique(datamat$`Type of Amount`)
+  # if (!("Case Reserves" %in% unique_toas) &&
+  #     (("Claims Reported excl. ACR" %in% unique_toas) || ("Claims Reported incl. ACR" %in% unique_toas))) {
+  #   # Check whether PAID values are given or not:
+  #   if ("Claims Paid" %in% unique_toas) {
+  #
+  #   }else{
+  #
+  #   }
+  #
+  # }
 
   return(datamat)
 }
