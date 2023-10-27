@@ -376,8 +376,8 @@ app_server <- function(input, output, session) {
     dattab <- dattab[-1,]
 
     # Dummy result matrix:
-    dummy_res <- as.data.frame(matrix(rep(NA, 15*nrow(dattab)), ncol = 15, nrow = nrow(dattab)))
-    colnames(dummy_res) <- c("Process Period", "Process Type", "Portfolio Name", "Legal Entity", "Line of Business",
+    prep_df <- as.data.frame(matrix(rep(NA, 15*nrow(dattab)), ncol = 15, nrow = nrow(dattab)))
+    colnames(prep_df) <- c("Process Period", "Process Type", "Portfolio Name", "Legal Entity", "Line of Business",
                                   "Type of Business", "Description", "Currency", "Period Type",
                                   "Origin frequency", "Development Period frequency",
                                   "Origin Period", "Development Period", "Type of Amount", "Amount")
@@ -385,7 +385,7 @@ app_server <- function(input, output, session) {
 
     # For each given column name, we change
     for (i in upload_wizard$given_SPIRE_columns) {
-      dummy_res[,which(colnames(dummy_res) %in% i)] <-
+      prep_df[,which(colnames(prep_df) %in% i)] <-
         dattab[,which(colnames(dattab) %in% input[[paste0("MU_wizard_",gsub(" ", "_", tolower(i)))]])]
     }
 
@@ -395,14 +395,14 @@ app_server <- function(input, output, session) {
       # as there could be multiple LoBs in the datatable and therefore we can't name them
       # all the same
       if (j != "Portfolio Name") {
-        dummy_res[, j] <- input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]]
+        prep_df[, j] <- input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]]
       }else{
-        if (all(is.na(dummy_res[,"Line of Business"]))) {
-          dummy_res[, j] <- paste0(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]],"_",
+        if (all(is.na(prep_df[,"Line of Business"]))) {
+          prep_df[, j] <- paste0(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]],"_",
                                    input[[paste0("MU_wizard_",gsub(" ", "_", tolower("Line of Business")))]])
         }else{
-          dummy_res[, j] <-
-            paste0(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]],"_",dummy_res[,"Line of Business"])
+          prep_df[, j] <-
+            paste0(input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]],"_",prep_df[,"Line of Business"])
 
         }
 
@@ -410,11 +410,25 @@ app_server <- function(input, output, session) {
 
     }
 
-    data_res <<- dummy_res
-    # Prepare the SPIRE Template and save it to the reactive list
-    upload_wizard$final_df <- template_prep(dummy_res)
+    data_res <<- prep_df
 
-    data_res_2 <<- upload_wizard$final_df
+    # Prepare the SPIRE Template and save it to the reactive list
+    prep_df <- template_prep(prep_df)
+
+    # Include the case reserves, if there is no Case Reserves given:
+    if (!("Case Reserves" %in% unique(prep_df$`Type of Amount`)) || input$MU_fileupload_cumulativeformat) {
+      # Create triangles out of the given data table
+      triangle_list <- create_triangle_fromdata(datamat = prep_df, cumorinc = T)
+
+      #Calculation of the Case Reserves
+      #Addding to the final prep_df
+      #Concatinate both matrices and save in final_df
+
+    }
+
+    # Prepare the SPIRE Template and save it to the reactive list
+    upload_wizard$final_df <- prep_df
+
 
     #Generate the box element, that allws us to download the data table
     output$MU_data_display_exportbox <- shiny::renderUI({
