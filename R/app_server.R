@@ -468,6 +468,62 @@ app_server <- function(input, output, session) {
       return(outputlist)
     })
 
+    #Generate the box element, that allows us to generate total portfolios:
+    output$MU_data_display_totalbox <- shiny::renderUI({
+      outputlist <- list()
+      outputlist[[1]] <-
+        box(title = "Generate Total Portfolio", solidHeader = TRUE, status = "info",
+            collapsible = T, width = "100%",
+            shiny::helpText("Please select the number of 'Total'-portoflio you want to generate.
+                            By doing so, you need to define the new portfolio
+                            name and which original portfolio are part of it:"),
+            shiny::textInput(inputId = "MU_data_display_totalname",
+                             label = "How should the template be named?",
+                             value = "SPIRE_template"),
+            shiny::numericInput("MU_data_display_numbr_totalportfolios",
+                                label = "Please select the number of 'Total'-portfolios:",
+                                min = 1, max = length(unique(upload_wizard$final_df$`Portfolio Name`)),
+                                step = 1, value = 1),
+            hr(),
+            shiny::uiOutput("MU_data_display_total_information"),
+            shiny::downloadButton('MU_data_display_total_download', 'Create SPIRE Template', width = "100%",
+                                  style = "color: #FFFFFF; background-color:  #24a0ed;
+                               border-color:  #24a0ed", icon = shiny::icon("plus"))
+        )
+
+      return(outputlist)
+    })
+
+    # Generate the information of the total box deep dive:
+    output$MU_data_display_total_information <- renderUI({
+      outputlist <- list()
+      for (i in 1:input$MU_data_display_numbr_totalportfolios) {
+        outputlist[[3*(i - 1) + 1]] <-
+          fluidRow(
+            col_4(
+              htmltools::h5(paste0(i,". Total portfolio:"),
+                            style = "text-decoration: underline; font-weight: bold")
+            ),
+            col_8(
+              shiny::textInput(inputId = paste0("MU_display_totalname_",i), label = NULL,
+                               placeholder = paste0("Name for ", i,". 'Total' portfolio"))
+            )
+          )
+
+        outputlist[[3*(i - 1) + 2]] <-
+          shinyWidgets::pickerInput(
+            inputId = "MU_data_display_totalcolumnselection",
+            label = "Which portofilios should be included?",
+            choices =  unique(upload_wizard$final_df$`Portfolio Name`),
+            options = list(`actions-box` = TRUE), multiple = T
+          )
+        if (i != input$MU_data_display_numbr_totalportfolios) {
+          outputlist[[3*(i - 1) + 3]] <- hr()
+        }
+      }
+      return(outputlist)
+    })
+
     # Generate the UI element for the table output:
     output$MU_data_display_tablecheck <- shiny::renderUI({
       outputlist <- list()
@@ -520,6 +576,54 @@ app_server <- function(input, output, session) {
       saveWorkbook(wb, file, overwrite = TRUE)
     }
   )
+
+  # As soon as the total download button is clicked, we need first to preprocess
+  ## the data and bring it again to the prerequired SPIRE format.
+  ## Afterwards, we export the new data:
+  output$MU_data_display_total_download <- shiny::downloadHandler(
+    filename = function(){
+      filename <- input$MU_data_display_totalname
+      paste(Sys.Date(),"_Total_",filename, ".xlsx", sep = "")
+    },
+    content = function(file){
+
+      # Create the working directory:
+      wb <- createWorkbook()
+
+      # Read-in and prepare the DF:
+      final_df <- upload_wizard$final_df
+      final_df$Amount <- round(as.numeric(final_df$Amount), digits = 2)
+      final_df$`Development Period` <- as.numeric(final_df$`Development Period`)
+      final_df$`Origin Period` <- as.numeric(final_df$`Origin Period`)
+
+      for (i in 1:input$MU_data_display_numbr_totalportfolios) {
+        # Create a copy
+        crnt_final_df <- final_df
+
+        # Changing the portfolio name for the selected portfolios:
+        crnt_final_df$`Portfolio Name`[which(crnt_final_df$`Portfolio Name` %in%
+                                               input$MU_data_display_totalcolumnselection)] <-
+          input[[paste0("MU_display_totalname_",i)]]
+
+        # Make Uniqueness of the rows save:
+        crnt_final_df <- remove_duplicates_bysum(df_to_manipulate = crnt_final_df)
+
+        # Create a new Tab in the workbook, with the predefined name:
+        addWorksheet(wb, paste0("data",i))
+
+        # Reads out the triangle data and saves it in a temp. variabel
+        writeData(wb = wb, sheet = paste0("data",i), x = crnt_final_df,
+                  rowNames = F ,colNames = TRUE)
+
+        # Adding the standard Excel Style to the workbook:
+        addingstyletowb(wb = wb, sheetnm = paste0("data",i), data = crnt_final_df)
+      }
+
+      # Save the file
+      saveWorkbook(wb, file, overwrite = TRUE)
+    }
+  )
+
 
   #----------------------------------------------------------------------------#
   #----------------------------------------------------------------------------#

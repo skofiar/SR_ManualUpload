@@ -86,7 +86,8 @@ app_ui <- function(request) {
                                          After checking the table, you can export the template."),
                                 fluidRow(
                                   col_4(
-                                    uiOutput("MU_data_display_exportbox")
+                                    uiOutput("MU_data_display_exportbox"),
+                                    uiOutput("MU_data_display_totalbox")
                                   ),
                                   col_8(
                                     uiOutput("MU_data_display_tablecheck")
