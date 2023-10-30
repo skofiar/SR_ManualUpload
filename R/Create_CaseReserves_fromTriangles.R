@@ -12,8 +12,6 @@
 #'      by [[portfolio_name]][[type_of_amount]]. Additionally, the Case Reserve
 #'      values are included
 #' @import ChainLadder
-#' @import dplyr
-#' @import DT
 #' @export
 create_casereserves_fromtriangles <- function(nested_list){
   # Create an empty list to store the results
@@ -34,7 +32,7 @@ create_casereserves_fromtriangles <- function(nested_list){
       if (!is.null(paid_triangle)) {
         print(paste0(dim(reported_triangle)," vs. ", dim(paid_triangle)))
         # Ensure the triangles have matching dimensions
-        if(all(dim(reported_triangle) == dim(paid_triangle))) {
+        if (all(dim(reported_triangle) == dim(paid_triangle))) {
 
           # Subtract the 'Paid' triangle from the 'Reported' triangle
           case_reserves <- reported_triangle - paid_triangle
@@ -71,6 +69,7 @@ create_casereserves_fromtriangles <- function(nested_list){
     # Still need to create the additional df which will be added in the end
     ## to the final data frame:
     additional_casereserves_df <- c()
+    # --> This needs to be adapted at the end!
     return(list(nested_list, additional_casereserves_df))
   }
 

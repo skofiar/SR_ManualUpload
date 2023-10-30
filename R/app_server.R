@@ -414,20 +414,28 @@ app_server <- function(input, output, session) {
 
     # Prepare the SPIRE Template and save it to the reactive list
     prep_df <- template_prep(prep_df)
+    # Prepare list for potential triangle creation:
+    triangle_list <- NULL
 
-    # Transform the data to incremental values, if it is given as cumulative ones:
-    if ( input$MU_fileupload_cumulativeformat) {
-      # Create triangles out of the given data table
-      triangle_list <- create_triangle_fromdata(datamat = prep_df, cumorinc = T)
-    }
+    # THIS STILL NEEDS TO BE FINISHED!!!
+    # # Transform the data to incremental values, if it is given as cumulative ones:
+    # if (input$MU_fileupload_cumulativeformat) {
+    #   # Create triangles out of the given data table
+    #   triangle_list <-
+    #     create_triangle_fromdata(datamat = prep_df,
+    #                   cumorinc = input$MU_fileupload_cumulativeformat)
+    # }
 
     # Calculate the case Reserves:
     # Include the case reserves, if there is no Case Reserves given:
     if (!("Case Reserves" %in% unique(prep_df$`Type of Amount`))) {
       # If the triangle_list was not yet created, then we do the following:
+      print(triangle_list)
       if (is.null(triangle_list)) {
         # Create triangles out of the given data table
-        triangle_list <- create_triangle_fromdata(datamat = prep_df, cumorinc = T)
+        triangle_list <-
+          create_triangle_fromdata(datamat = prep_df,
+                        cumorinc = input$MU_fileupload_cumulativeformat)
       }
 
     }

@@ -8,16 +8,14 @@ The following tasks are done here:
 1. SPIRE starts with a development period of 0 (for all possible development
      period frequencies). Depending on the selected Development Period frequency
      we shift the values.
-2. Get rid of all 0 amounts in the data table.  This is not a required SPIRE
-     functionality, but makes data handling like exporting the data table,
      uploading the data table to SPIRE faster and easier
-3. All Origin Periods that are given as only the year (For example 2023) are
+2. All Origin Periods that are given as only the year (For example 2023) are
      converted to Origin Period + January in numbers (202301)
-4. The SPIRE template needs to have a unique key
+3. The SPIRE template needs to have a unique key
      (Key = Portfolio name + Origin Period + Development Period + Type of Amount).
       Using the function "remove_duplicates_by_sum()", we summarize the duplicates
       and remove the duplicated rows.
-5. If Case Reserves are not given in the data table, then we need to add it
+4. If Case Reserves are not given in the data table, then we need to add it
      "manually" by calculating:
      Case Reserves = Claims Reported excl. ACR - Claims Paid}
 \usage{
@@ -25,7 +23,7 @@ template_prep(datamat)
 }
 \arguments{
 \item{datamat}{Data frame/table that has already the right number and type of
-of columns but does not satisfy the/one of the 5 conditions above.}
+of columns but does not satisfy the/one of the 4 conditions above.}
 }
 \value{
 datamat, in the template format needed by SPIRE
@@ -37,16 +35,14 @@ The following tasks are done here:
 1. SPIRE starts with a development period of 0 (for all possible development
      period frequencies). Depending on the selected Development Period frequency
      we shift the values.
-2. Get rid of all 0 amounts in the data table.  This is not a required SPIRE
-     functionality, but makes data handling like exporting the data table,
      uploading the data table to SPIRE faster and easier
-3. All Origin Periods that are given as only the year (For example 2023) are
+2. All Origin Periods that are given as only the year (For example 2023) are
      converted to Origin Period + January in numbers (202301)
-4. The SPIRE template needs to have a unique key
+3. The SPIRE template needs to have a unique key
      (Key = Portfolio name + Origin Period + Development Period + Type of Amount).
       Using the function "remove_duplicates_by_sum()", we summarize the duplicates
       and remove the duplicated rows.
-5. If Case Reserves are not given in the data table, then we need to add it
+4. If Case Reserves are not given in the data table, then we need to add it
      "manually" by calculating:
      Case Reserves = Claims Reported excl. ACR - Claims Paid
 }
