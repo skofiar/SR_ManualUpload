@@ -29,7 +29,6 @@ create_triangle_fromdata <- function(datamat, cumorinc){
 
   # Now create the biggest possible data frame using information comming from datamat
   rowlength <- max(as.numeric(substr(datamat$`Origin Period`,1,4))) - min(as.numeric(substr(datamat$`Origin Period`, 1,4))) + 1
-
   sorted_dev_per <- sort(unique(as.numeric(datamat$`Development Period`)))
   # We take always the 2nd element, as the first one will be 0 in each case (Annual, Half-yearly, ...)!
   collength <- length(seq(0,sorted_dev_per[length(sorted_dev_per)], sorted_dev_per[2]) )
