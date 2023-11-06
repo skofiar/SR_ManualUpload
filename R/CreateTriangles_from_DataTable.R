@@ -61,31 +61,44 @@ create_triangle_fromdata <- function(datamat, cumorinc){
       append(type_list, list("Case Reserves" =
             create_CaseReserve(ReportedTriangle = type_list$`Claims Reported excl. ACR`,
                                PaidTriangle = type_list$`Claims Paid`)))
+
+
+
     return(type_list)
   })
   # Name the elements of the list (1st level)
   names(triangle_list) <- unique_portfolios
 
-  return(triangle_list)
+  # Case Reserve Dataframe creation:
+  ## Create a empty dataframe, to which we add the case reserves to:
+  CR_df <- list()
+
+  ## Create a dataframe out of the Case Reserve triangle:
+  for (i in 1:length(triangle_list)) {
+    # Read in the corresponding initial df:
+    datamat_cur <- datamat[datamat$`Portfolio Name` == unique_portfolios[i],]
+    # Read in the CR triangle:
+    raw_CR_df <- as.data.frame(triangle_list[[i]]$`Case Reserves`)
+
+    # Create the final CR df for the corresponding element of the nested list:
+    if (dim(raw_CR_df)[1] < dim(datamat_cur)[1]) {
+      final_CR_df <- datamat_cur[1:dim(raw_CR_df)[1], ]
+    }else{
+      final_CR_df <- datamat_cur[rep(1, dim(raw_CR_df)[1]),]
+    }
+
+    final_CR_df[, c("Origin Period", "Development Period","Amount")] <- raw_CR_df
+    final_CR_df$`Type of Amount` <- "Case Reserves"
+
+    # Save the final CR df to a list, which will be rbind at the end:
+    CR_df[[i]] <- final_CR_df
+  }
+
+  additional_prep_df <- as.data.frame(do.call(rbind, CR_df))
+
+  return(list(triangle_list, additional_prep_df))
 }
 
 
-create_CaseReserve <- function(ReportedTriangle, PaidTriangle){
-  # Create DF out of these matrices:
-  df_ReportedTriangle <- as.data.frame(ReportedTriangle) %>%
-    mutate(key = paste0(`Origin Period`, "_", `Development Period`))
-  df_PaidTriangle <- as.data.frame(PaidTriangle) %>%
-    mutate(key = paste0(`Origin Period`, "_", `Development Period`))
 
-  # Create a total data frame:
-  df_CaseReserve <- merge(df_ReportedTriangle, df_PaidTriangle, by = "key") %>%
-    mutate(value = value.x - value.y) %>%
-    select(`Origin Period.x`, `Development Period.x`, value) %>%
-    rename("Development Period" = `Development Period.x`,
-           "Origin Period" = `Origin Period.x`)
-
-  CaseReserve <- as.triangle(df_CaseReserve, ,
-                             origin = "Origin Period", dev = "Development Period", value = "value")
-  return(CaseReserve)
-}
 

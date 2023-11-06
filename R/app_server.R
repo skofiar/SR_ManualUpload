@@ -416,33 +416,29 @@ app_server <- function(input, output, session) {
     prep_df <- template_prep(prep_df)
     # Prepare list for potential triangle creation:
     triangle_list <- NULL
-#------------------------------------------------------------------------------#
-    # THIS STILL NEEDS TO BE FINISHED!!!
+
     # Transform the data to incremental values, if it is given as cumulative ones:
-    # if (input$MU_fileupload_cumulativeformat) {
-    #   # Create triangles out of the given data table
-    #   triangle_list <-
-    #     create_triangle_fromdata(datamat = prep_df,
-    #                   cumorinc = input$MU_fileupload_cumulativeformat)
-    # }
+    if (input$MU_fileupload_cumulativeformat) {
+      # Create triangles out of the given data table
+      triangle_list <-
+        create_triangle_fromdata(datamat = prep_df,
+                      cumorinc = input$MU_fileupload_cumulativeformat)[[1]]
+    }
 
     # Calculate the case Reserves:
     # Include the case reserves, if there is no Case Reserves given:
-    # if (!("Case Reserves" %in% unique(prep_df$`Type of Amount`))) {
-    #   # If the triangle_list was not yet created, then we do the following:
-    #   print(triangle_list)
-    #   if (is.null(triangle_list)) {
-    #     # Create triangles out of the given data table
-    #     triangle_list <-
-    #       create_triangle_fromdata(datamat = prep_df,
-    #                     cumorinc = input$MU_fileupload_cumulativeformat)
-    #   }
-    #
-    # }
-#------------------------------------------------------------------------------#
-    #Calculation of the Case Reserves
-    #Addding to the final prep_df
-    #Concatinate both matrices and save in final_df
+    if (!("Case Reserves" %in% unique(prep_df$`Type of Amount`))) {
+      # If the triangle_list was not yet created, then we do the following:
+      if (is.null(triangle_list)) {
+        # Create triangles out of the given data table
+        CR_df_add <-
+          create_triangle_fromdata(datamat = prep_df,
+                        cumorinc = input$MU_fileupload_cumulativeformat)[[2]]
+        # Bind the uploaded data frame with the CR:
+        prep_df <- rbind(prep_df, CR_df_add)
+      }
+
+    }
 
 
     # Prepare the SPIRE Template and save it to the reactive list
