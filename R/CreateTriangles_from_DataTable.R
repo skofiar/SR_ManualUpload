@@ -27,41 +27,40 @@ create_triangle_fromdata <- function(datamat, cumorinc){
   unique_portfolios <- unique(datamat$`Portfolio Name`)
   unique_types <- unique(datamat$`Type of Amount`)
 
-  # Now create the biggest possible data frame using information comming from datamat
-  rowlength <- max(as.numeric(substr(datamat$`Origin Period`,1,4))) - min(as.numeric(substr(datamat$`Origin Period`, 1,4))) + 1
-  sorted_dev_per <- sort(unique(as.numeric(datamat$`Development Period`)))
-  # We take always the 2nd element, as the first one will be 0 in each case (Annual, Half-yearly, ...)!
-  collength <- length(seq(0,sorted_dev_per[length(sorted_dev_per)], sorted_dev_per[2]) )
-
-  #Create the prototype:
-  prototype_df <- as.data.frame(matrix(rep(NA, rowlength*collength), ncol = collength, nrow = rowlength))
-  colnames(prototype_df) <- seq(0,sorted_dev_per[length(sorted_dev_per)], sorted_dev_per[2])
-  rownames(prototype_df) <- seq(min(as.numeric(datamat$`Origin Period`)), max(as.numeric(datamat$`Origin Period`)), 100)
-
-
+  # Generate the list of triangles:
   triangle_list <- lapply(unique_portfolios, function(i) {
     datamat_cur <- datamat[datamat$`Portfolio Name` == i,]
     type_list <- lapply(unique_types, function(j) {
       datamat_type <- datamat_cur[datamat_cur$`Type of Amount` == j,]
-      if (cumorinc) {
-        triangle_type_list <-
-          cum2incr(
+      # In case there is no type represented, we skipp the triangle creation
+      if (dim(datamat_type)[1] > 0) {
+        if (cumorinc && (length(unique(datamat_type$`Development Period`)) > 2)) {
+          triangle_type_list <-
+            cum2incr(
+              as.triangle(
+                as.data.frame(datamat_type),
+                origin = "Origin Period", dev = "Development Period", value = "Amount"
+              )
+            )
+        }else{
+          triangle_type_list <-
             as.triangle(
               as.data.frame(datamat_type),
               origin = "Origin Period", dev = "Development Period", value = "Amount"
             )
-          )
+        }
+        return(triangle_type_list)
       }else{
-        triangle_type_list <-
-          as.triangle(
-            as.data.frame(datamat_type),
-            origin = "Origin Period", dev = "Development Period", value = "Amount"
-          )
+        return(NULL)
       }
-      return(triangle_type_list)
     })
     # Name the nested elements (2nd level) of the list
     names(type_list) <- unique_types
+    # Calculate the Case Reserves and add it to the type_list list:
+    type_list <-
+      append(type_list, list("Case Reserves" =
+            create_CaseReserve(ReportedTriangle = type_list$`Claims Reported excl. ACR`,
+                               PaidTriangle = type_list$`Claims Paid`)))
     return(type_list)
   })
   # Name the elements of the list (1st level)
@@ -70,4 +69,23 @@ create_triangle_fromdata <- function(datamat, cumorinc){
   return(triangle_list)
 }
 
+
+create_CaseReserve <- function(ReportedTriangle, PaidTriangle){
+  # Create DF out of these matrices:
+  df_ReportedTriangle <- as.data.frame(ReportedTriangle) %>%
+    mutate(key = paste0(`Origin Period`, "_", `Development Period`))
+  df_PaidTriangle <- as.data.frame(PaidTriangle) %>%
+    mutate(key = paste0(`Origin Period`, "_", `Development Period`))
+
+  # Create a total data frame:
+  df_CaseReserve <- merge(df_ReportedTriangle, df_PaidTriangle, by = "key") %>%
+    mutate(value = value.x - value.y) %>%
+    select(`Origin Period.x`, `Development Period.x`, value) %>%
+    rename("Development Period" = `Development Period.x`,
+           "Origin Period" = `Origin Period.x`)
+
+  CaseReserve <- as.triangle(df_CaseReserve, ,
+                             origin = "Origin Period", dev = "Development Period", value = "value")
+  return(CaseReserve)
+}
 
