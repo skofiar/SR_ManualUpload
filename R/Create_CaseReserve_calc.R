@@ -15,8 +15,12 @@ create_CaseReserve <- function(ReportedTriangle, PaidTriangle){
   # Create DF out of these matrices:
   df_ReportedTriangle <- as.data.frame(ReportedTriangle) %>%
     mutate(key = paste0(`Origin Period`, "_", `Development Period`))
+
   df_PaidTriangle <- as.data.frame(PaidTriangle) %>%
-    mutate(key = paste0(`Origin Period`, "_", `Development Period`))
+    mutate(key = paste0(`Origin Period`, "_", `Development Period`)) %>%
+    mutate(across(everything(), ~replace(., is.na(.), 0)))
+
+  print(df_PaidTriangle)
 
   # Create a total data frame:
   df_CaseReserve <- merge(df_ReportedTriangle, df_PaidTriangle, by = "key") %>%

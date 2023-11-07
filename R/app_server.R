@@ -86,10 +86,24 @@ app_server <- function(input, output, session) {
       # Tab-Selectinput
       outputlist[[1]] <- shiny::selectInput(inputId = "MU_fileupload_sheetnm", label = "In which tab is the data located?",
                                      choices = upload_wizard$sheetnames, selected = upload_wizard$sheetnames[1], multiple = F)
-      # Range selection
-      outputlist[[2]] <- fluidRow(
+      outputlist[[2]] <- h5("Data Details:", style = "font-weight: bold")
+
+      # Negative Paid values:
+      outputlist[[3]] <- fluidRow(
         col_8(
-          helpText("Do you want to select a specific range?")
+          helpText("Are the Paid, Reported, etc. values given as negative values?")
+        ),
+        col_4(
+          switchInput(inputId = "MU_fileupload_negpaidvalues",
+                      label = " ", value = T,
+                      onLabel = "Yes", offLabel = "No")
+        )
+      )
+
+      # Range selection
+      outputlist[[4]] <- fluidRow(
+        col_8(
+          helpText("Is the data provided in a specific range?")
         ),
         col_4(
           switchInput(inputId = "MU_fileupload_rangeselection",
@@ -99,12 +113,12 @@ app_server <- function(input, output, session) {
       )
 
       # uiOutput for a potential range selection:
-      outputlist[[3]] <- uiOutput("MU_rangeseleciton_ui")
+      outputlist[[5]] <- uiOutput("MU_rangeseleciton_ui")
 
       # Range selection
-      outputlist[[4]] <- fluidRow(
+      outputlist[[6]] <- fluidRow(
         col_8(
-          helpText("Cumulative Data format given?")
+          helpText("Is the data given in cumulative format?")
         ),
         col_4(
           switchInput(inputId = "MU_fileupload_cumulativeformat",
@@ -114,7 +128,7 @@ app_server <- function(input, output, session) {
       )
 
       # File Upload Button
-      outputlist[[5]] <- actionButton(inputId = "MU_fileupload_button",
+      outputlist[[7]] <- actionButton(inputId = "MU_fileupload_button",
                                       label = "Load File", width = "100%",
                                       style = "color: #FFFFFF; background-color:  #24a0ed; border-color:  #24a0ed")
 
@@ -392,8 +406,8 @@ app_server <- function(input, output, session) {
     # Adding to the result dataframe also the not in the data table given columns:
     for (j in upload_wizard$remaining_columns) {
       # Only in the case of the Portfolio Name we need to do a concatenation
-      # as there could be multiple LoBs in the datatable and therefore we can't name them
-      # all the same
+      # as there could be multiple LoBs in the datatable and therefore
+      # we can't name them all the same
       if (j != "Portfolio Name") {
         prep_df[, j] <- input[[paste0("MU_wizard_",gsub(" ", "_", tolower(j)))]]
       }else{
@@ -410,6 +424,7 @@ app_server <- function(input, output, session) {
 
     }
 
+    # JUST NEEDED FOR TESTING/DEVELOPING --> DEEMED TO BE DELETED!!
     data_res <<- prep_df
 
     # Prepare the SPIRE Template and save it to the reactive list
@@ -440,6 +455,11 @@ app_server <- function(input, output, session) {
 
     }
 
+    # In case the payment values are given as negative values, we want to flip the sign
+    if (input$MU_fileupload_negpaidvalues) {
+      prep_df$Amount[!grepl("prem", tolower(prep_df$`Type of Amount`))] <-
+        -prep_df$Amount[!grepl("prem", tolower(prep_df$`Type of Amount`))]
+    }
 
     # Prepare the SPIRE Template and save it to the reactive list
     upload_wizard$final_df <- prep_df
