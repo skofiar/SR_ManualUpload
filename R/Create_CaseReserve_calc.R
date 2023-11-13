@@ -16,11 +16,12 @@ create_CaseReserve <- function(ReportedTriangle, PaidTriangle){
   df_ReportedTriangle <- as.data.frame(ReportedTriangle) %>%
     mutate(key = paste0(`Origin Period`, "_", `Development Period`))
 
+  # Load the Paid Triangles and get rid of the NA's by replacing them with 0
+  ## This has no influence on the triangle itself or the calcution, we only want
+  ## to make sure that if there is no Paid value, we have Case Reserve = Reported
   df_PaidTriangle <- as.data.frame(PaidTriangle) %>%
     mutate(key = paste0(`Origin Period`, "_", `Development Period`)) %>%
     mutate(across(everything(), ~replace(., is.na(.), 0)))
-
-  print(df_PaidTriangle)
 
   # Create a total data frame:
   df_CaseReserve <- merge(df_ReportedTriangle, df_PaidTriangle, by = "key") %>%

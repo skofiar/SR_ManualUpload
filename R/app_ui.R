@@ -54,7 +54,11 @@ app_ui <- function(request) {
                                     helpText("Define the minimum data type (Premiums are needed for sure, do we need also Paid and Reported?)"),
                                     helpText("Massimo mentioned that he had the case once, where he uploaded halfyearly data and then the
                                                       diagnostics of the the portfolio view was not working (wrong periodicity was used).
-                                                      Make sure that this works also here, otherwise flag it!")
+                                                      Make sure that this works also here, otherwise flag it!"),
+                                    helpText("It is not allowed to have multiple different currencies in your data table for one portfolio!
+                                             One has to pay attention to that as soon as one wants to aggregate the data!",
+                                             "Currently in the aggregation code, we just overwrite the currency, as it is only an approximation.
+                                             But this could have an influence on the result!"),
                                 ),
                                 fluidRow(
                                   column(4,

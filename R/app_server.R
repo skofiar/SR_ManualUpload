@@ -424,9 +424,6 @@ app_server <- function(input, output, session) {
 
     }
 
-    # JUST NEEDED FOR TESTING/DEVELOPING --> DEEMED TO BE DELETED!!
-    data_res <<- prep_df
-
     # Prepare the SPIRE Template and save it to the reactive list
     prep_df <- template_prep(prep_df)
     # Prepare list for potential triangle creation:
@@ -651,7 +648,6 @@ app_server <- function(input, output, session) {
     # Create list with all the data:
     Fileinp <- input$MU_triangle_fileupload
     upload_wizard_triangle$Fileinp <- Fileinp
-    uploadedfiles <<- Fileinp
 
     upload_wizard_triangle$first_raw_data <- fileinp.filereadin(fileinp = Fileinp, shtnms = NULL,
                                                        range.selection = NULL, mltple = T)

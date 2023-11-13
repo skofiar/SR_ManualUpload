@@ -26,12 +26,13 @@ remove_duplicates_bysum <- function(df_to_manipulate){
       result_df %>% group_by(uniqueness_key) %>%
         summarise(sum(as.numeric(Amount))) %>% unique()
     })
+    colnames(result_df_tosummarize) <- c("uniqueness_key", "value")
     # Take only the unique rows:
     uniquerows_result_df <- result_df[!duplicated(result_df$uniqueness_key),]
 
     # Match the rows and write them into the case reserve df:
     match_index <- match(uniquerows_result_df$uniqueness_key, result_df_tosummarize$uniqueness_key)
-    uniquerows_result_df$Amount <- result_df_tosummarize$`sum(as.numeric(Amount))`[match_index]
+    uniquerows_result_df$Amount <- result_df_tosummarize$`value`[match_index]
 
     # The result matrix is the unique row matrix without the uniqueness_key
     result_df <- uniquerows_result_df %>% select(-uniqueness_key)
